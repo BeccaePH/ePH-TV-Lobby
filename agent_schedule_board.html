@@ -11,12 +11,12 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.23.5/babel.min.js"></script>
-<style>html,body{margin:0;padding:0;background:#E7E5DA;}</style>
+<style>html,body{margin:0;padding:0;height:100%;overflow:hidden;background:#E7E5DA;}#root{height:100%;}</style>
 </head>
 <body>
 <div id="root"></div>
 <script type="text/babel">
-const { useState, useMemo, useEffect } = React;
+const { useState, useMemo, useEffect, useRef } = React;
 
 
 // Photos pulled from ePlatinumHealth's own staff/agent bio pages (eplatinumhealth.com).
@@ -239,6 +239,31 @@ function AgentScheduleBoard() {
   // until fresh data lands.
   const isStale = localDateKey(now) !== SCHEDULE_DATE;
 
+  // The whole page is locked to the screen's height (no scrolling), and the
+  // header's own height can vary a lot depending on how wide the screen is
+  // (the welcome message may wrap onto one, two, or three lines). That means
+  // the space actually left over for each of the 8 agent rows isn't a fixed
+  // number we can guess with vh-based CSS alone. Instead we measure the
+  // board's real rendered height on every resize and publish it as a CSS
+  // variable, so photo size / name size / appointment text size can all
+  // scale to whatever room is truly available and never get clipped.
+  const boardRef = useRef(null);
+  useEffect(() => {
+    const el = boardRef.current;
+    if (!el || typeof ResizeObserver === "undefined") return;
+    const GAP = 3;
+    const update = (height) => {
+      const rowH = (height - GAP * (AGENTS.length - 1)) / AGENTS.length;
+      el.style.setProperty("--row-h", `${Math.max(rowH, 0)}px`);
+    };
+    update(el.getBoundingClientRect().height);
+    const ro = new ResizeObserver((entries) => {
+      for (const entry of entries) update(entry.contentRect.height);
+    });
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, []);
+
   const addAppt = (e) => {
     e.preventDefault();
     if (!form.time || !form.client.trim()) return;
@@ -295,7 +320,7 @@ function AgentScheduleBoard() {
         <div style={styles.dateBox}>{today}</div>
       </div>
 
-      <div style={styles.board}>
+      <div style={styles.board} ref={boardRef}>
         {AGENTS.map((name, i) => (
           <ScheduleRow
             key={name}
@@ -366,9 +391,12 @@ const styles = {
     fontFamily: "'Inter', system-ui, sans-serif",
     background: COLORS.paper,
     color: COLORS.ink,
-    padding: "48px 56px 72px",
-    minHeight: "100%",
+    padding: "32px 56px 24px",
+    height: "100vh",
     boxSizing: "border-box",
+    display: "flex",
+    flexDirection: "column",
+    overflow: "hidden",
   },
   header: {
     display: "flex",
@@ -378,24 +406,25 @@ const styles = {
     paddingBottom: 22,
     marginBottom: 20,
     gap: 18,
+    flexShrink: 0,
   },
   headerLeft: {
     display: "flex",
     alignItems: "center",
     gap: 14,
-    flexWrap: "wrap",
+    flexWrap: "nowrap",
     justifyContent: "center",
     maxWidth: "100%",
   },
   logo: {
-    height: 103,
+    height: "clamp(28px, 3.8vw, 103px)",
     width: "auto",
     display: "block",
     flexShrink: 0,
   },
   h1: {
     margin: 0,
-    fontSize: 107,
+    fontSize: "clamp(28px, 4vw, 107px)",
     fontWeight: 600,
     fontFamily: "'Quicksand', 'Inter', system-ui, sans-serif",
     letterSpacing: "-0.01em",
@@ -406,6 +435,7 @@ const styles = {
     display: "flex",
     justifyContent: "center",
     marginBottom: 20,
+    flexShrink: 0,
   },
   dateBox: {
     fontSize: 18,
@@ -425,12 +455,16 @@ const styles = {
     borderRadius: 14,
     overflow: "hidden",
     background: "#fff",
+    flex: 1,
+    minHeight: 0,
   },
   row: {
-    display: "grid",
-    gridTemplateColumns: "480px 1fr",
+    display: "flex",
+    flexDirection: "row",
     borderBottom: `1px solid ${COLORS.line}`,
-    minHeight: 108,
+    flex: 1,
+    minHeight: 0,
+    overflow: "hidden",
   },
   nameCell: {
     display: "flex",
@@ -439,46 +473,66 @@ const styles = {
     padding: "0 30px",
     borderRight: `6px solid`,
     background: "#fcfcf9",
+    width: 480,
+    flexShrink: 0,
     flexWrap: "wrap",
   },
-  dot: { width: 16, height: 16, borderRadius: "50%", flexShrink: 0 },
+  dot: {
+    width: "clamp(6px, calc(var(--row-h, 108px) * 0.148), 16px)",
+    height: "clamp(6px, calc(var(--row-h, 108px) * 0.148), 16px)",
+    borderRadius: "50%",
+    flexShrink: 0,
+  },
   photo: {
-    width: 76,
-    height: 76,
+    width: "clamp(26px, calc(var(--row-h, 108px) * 0.7), 76px)",
+    height: "clamp(26px, calc(var(--row-h, 108px) * 0.7), 76px)",
     borderRadius: "50%",
     objectFit: "cover",
     border: "4px solid",
+    boxSizing: "border-box",
     flexShrink: 0,
   },
   photoFallback: {
-    width: 76,
-    height: 76,
+    width: "clamp(26px, calc(var(--row-h, 108px) * 0.7), 76px)",
+    height: "clamp(26px, calc(var(--row-h, 108px) * 0.7), 76px)",
     borderRadius: "50%",
     border: "4px solid",
+    boxSizing: "border-box",
     flexShrink: 0,
     display: "flex",
     alignItems: "center",
     justifyContent: "center",
-    fontSize: 27,
+    fontSize: "clamp(10px, calc(var(--row-h, 108px) * 0.25), 27px)",
     fontWeight: 700,
     color: COLORS.muted,
     background: "#f0efe9",
   },
-  name: { fontWeight: 700, fontSize: 36 },
+  name: { fontWeight: 700, fontSize: "clamp(12px, calc(var(--row-h, 108px) * 0.333), 36px)" },
   scheduleCell: {
     padding: "0 30px",
     display: "flex",
     alignItems: "center",
     overflow: "hidden",
-    height: 108,
+    flex: 1,
+    minWidth: 0,
+    height: "100%",
   },
-  empty: { fontSize: 30, color: COLORS.muted, fontStyle: "italic" },
-  scrollMaskH: { height: 92, overflow: "hidden", width: "100%", paddingLeft: 32 },
+  empty: {
+    fontSize: "clamp(10px, calc(var(--row-h, 108px) * 0.278), 30px)",
+    color: COLORS.muted,
+    fontStyle: "italic",
+  },
+  scrollMaskH: {
+    height: "clamp(20px, calc(var(--row-h, 108px) * 0.85), 92px)",
+    overflow: "hidden",
+    width: "100%",
+    paddingLeft: 32,
+  },
   scrollTrackH: {
     display: "flex",
     flexDirection: "row",
     alignItems: "center",
-    height: 92,
+    height: "clamp(20px, calc(var(--row-h, 108px) * 0.85), 92px)",
     whiteSpace: "nowrap",
     willChange: "transform",
   },
@@ -486,14 +540,14 @@ const styles = {
     display: "flex",
     flexDirection: "row",
     alignItems: "center",
-    height: 92,
+    height: "clamp(20px, calc(var(--row-h, 108px) * 0.85), 92px)",
     flexWrap: "nowrap",
   },
   apptH: {
     display: "flex",
     alignItems: "center",
     gap: 18,
-    fontSize: 32,
+    fontSize: "clamp(10px, calc(var(--row-h, 108px) * 0.296), 32px)",
     flexShrink: 0,
     paddingRight: 40,
     marginRight: 40,
@@ -501,7 +555,7 @@ const styles = {
   },
   time: { fontWeight: 700, minWidth: 140 },
   client: { fontWeight: 600 },
-  note: { color: COLORS.muted, fontSize: 26 },
+  note: { color: COLORS.muted, fontSize: "clamp(9px, calc(var(--row-h, 108px) * 0.24), 26px)" },
   removeBtn: {
     marginLeft: "auto",
     border: "none",
@@ -516,6 +570,7 @@ const styles = {
     display: "flex",
     justifyContent: "flex-end",
     gap: 12,
+    flexShrink: 0,
   },
   toggleBtn: {
     border: `1px solid ${COLORS.green}`,
@@ -536,6 +591,7 @@ const styles = {
     fontFamily: "'Quicksand', 'Inter', system-ui, sans-serif",
     borderTop: `3px solid ${COLORS.green}`,
     paddingTop: 20,
+    flexShrink: 0,
   },
   form: {
     marginTop: 18,
@@ -547,6 +603,7 @@ const styles = {
     border: `1px solid ${COLORS.line}`,
     borderRadius: 14,
     padding: 20,
+    flexShrink: 0,
   },
   input: {
     border: `1px solid ${COLORS.line}`,
