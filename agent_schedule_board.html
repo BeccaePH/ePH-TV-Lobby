@@ -260,18 +260,6 @@ function AgentScheduleBoard() {
   const [form, setForm] = useState({ agent: AGENTS[0], time: "", client: "", note: "" });
   const [editMode, setEditMode] = useState(false);
 
-  // "Step away" mode swaps the header greeting for a "be right back" message
-  // and shows a footer note, without hiding the board itself. Stored in
-  // localStorage so it survives the page's own 5-minute auto-refresh (a
-  // plain reload would otherwise reset it).
-  const [away, setAway] = useState(false);
-  useEffect(() => {
-    if (localStorage.getItem("eph_away") === "1") setAway(true);
-  }, []);
-  useEffect(() => {
-    localStorage.setItem("eph_away", away ? "1" : "0");
-  }, [away]);
-
   // Drives the ticker: each row advances to its next appointment only once
   // that appointment's scheduled time has passed, not on a fixed timer.
   const [now, setNow] = useState(() => new Date());
@@ -279,6 +267,43 @@ function AgentScheduleBoard() {
     const id = setInterval(() => setNow(new Date()), 30000);
     return () => clearInterval(id);
   }, []);
+
+  // "Step away" mode swaps the header greeting for a "be right back" message
+  // and shows a footer note, without hiding the board itself. Stored in
+  // localStorage (alongside the date it was set) so it survives the page's
+  // own 5-minute auto-refresh, but it should never carry over into a new
+  // day — if the office was marked away at closing and nobody clicked it
+  // back before leaving, the board shouldn't still be saying "we'll be
+  // right with you" the next morning. So it's only restored on load if the
+  // stored date still matches today, and it's actively cleared the moment
+  // the date rolls over while the page happens to stay open across
+  // midnight without reloading.
+  const [away, setAway] = useState(false);
+  useEffect(() => {
+    const todayKey = localDateKey(new Date());
+    if (
+      localStorage.getItem("eph_away") === "1" &&
+      localStorage.getItem("eph_away_date") === todayKey
+    ) {
+      setAway(true);
+    } else {
+      localStorage.setItem("eph_away", "0");
+    }
+  }, []);
+  useEffect(() => {
+    localStorage.setItem("eph_away", away ? "1" : "0");
+    if (away) {
+      localStorage.setItem("eph_away_date", localDateKey(new Date()));
+    }
+  }, [away]);
+  const awayDateRef = useRef(localDateKey(new Date()));
+  useEffect(() => {
+    const todayKey = localDateKey(now);
+    if (todayKey !== awayDateRef.current) {
+      awayDateRef.current = todayKey;
+      setAway(false);
+    }
+  }, [now]);
 
   // If it's no longer the calendar date this board was built for (e.g. it's
   // now tomorrow and the scheduled refresh hasn't run yet), don't show
