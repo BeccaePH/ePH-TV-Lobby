@@ -130,7 +130,7 @@ function ScheduleRow({ name, accent, appts, onRemove, synced, photoUrl }) {
   // of each row scrolling at its own arbitrary speed. The actual rendered
   // width of one copy of the list is measured live (it changes with the
   // row's own size), and the animation duration is derived from that.
-  const PX_PER_SEC = 70;
+  const PX_PER_SEC = 85;
   const trackRef = useRef(null);
   const [duration, setDuration] = useState(20);
   useEffect(() => {
