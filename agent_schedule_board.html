@@ -90,6 +90,12 @@ function to24(time) {
   return time;
 }
 
+function toMinutes(time) {
+  if (!time) return 24 * 60;
+  const [h, m] = time.split(":").map(Number);
+  return h * 60 + m;
+}
+
 function localDateKey(d) {
   const y = d.getFullYear();
   const m = String(d.getMonth() + 1).padStart(2, "0");
@@ -105,11 +111,27 @@ function toDisplay(time) {
   return `${h12}:${String(m).padStart(2, "0")} ${period}`;
 }
 
-function ScheduleRow({ name, accent, appts, onRemove, synced, photoUrl }) {
+function ScheduleRow({ name, accent, appts, onRemove, synced, photoUrl, now }) {
   const [imgFailed, setImgFailed] = useState(false);
+
+  // An appointment stays visible through its scheduled time and for a
+  // 20-minute grace period after — long enough for it to still be glanced
+  // at while it's presumably wrapping up — then drops off the list
+  // entirely rather than sitting there stale. `now` is refreshed by the
+  // parent every 30 seconds, so this re-filters automatically without any
+  // extra timers here.
+  const DROP_OFF_GRACE_MINUTES = 20;
+  const nowMinutes = useMemo(
+    () => now.getHours() * 60 + now.getMinutes(),
+    [now]
+  );
+
   const sorted = useMemo(
-    () => [...appts].sort((a, b) => to24(a.time).localeCompare(to24(b.time))),
-    [appts]
+    () =>
+      [...appts]
+        .filter((a) => toMinutes(a.time) + DROP_OFF_GRACE_MINUTES > nowMinutes)
+        .sort((a, b) => to24(a.time).localeCompare(to24(b.time))),
+    [appts, nowMinutes]
   );
 
   // If there are few enough appointments to comfortably show all at once,
@@ -404,6 +426,7 @@ function AgentScheduleBoard() {
             onRemove={editMode ? (id) => removeAppt(name, id) : null}
             synced={SYNCED_AGENTS.has(name)}
             photoUrl={AGENT_PHOTOS[name]}
+            now={now}
           />
         ))}
       </div>
