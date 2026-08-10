@@ -122,7 +122,31 @@ function ScheduleRow({ name, accent, appts, onRemove, synced, photoUrl }) {
   // seam is the normal item-to-item divider gap, i.e. a small break, never
   // a stretch of empty track.
   const NEEDS_SCROLL = sorted.length > 3;
-  const duration = Math.max(sorted.length * 9, 20);
+
+  // Speed is a fixed pixels-per-second rate, not a count-based guess, so
+  // every row's ticker glides at the exact same real-world pace regardless
+  // of how many appointments it has or how long the client names are —
+  // the whole board reads as one continuous, evenly-flowing stream instead
+  // of each row scrolling at its own arbitrary speed. The actual rendered
+  // width of one copy of the list is measured live (it changes with the
+  // row's own size), and the animation duration is derived from that.
+  const PX_PER_SEC = 70;
+  const trackRef = useRef(null);
+  const [duration, setDuration] = useState(20);
+  useEffect(() => {
+    if (!NEEDS_SCROLL) return;
+    const el = trackRef.current;
+    if (!el) return;
+    const measure = () => {
+      const oneCopyWidth = el.scrollWidth / 2;
+      setDuration(Math.max(oneCopyWidth / PX_PER_SEC, 8));
+    };
+    measure();
+    if (typeof ResizeObserver === "undefined") return;
+    const ro = new ResizeObserver(measure);
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, [NEEDS_SCROLL, sorted]);
 
   const renderAppt = (a, key, hidden) => (
     <div style={styles.apptH} key={key} aria-hidden={hidden || undefined}>
@@ -172,6 +196,7 @@ function ScheduleRow({ name, accent, appts, onRemove, synced, photoUrl }) {
         ) : NEEDS_SCROLL ? (
           <div style={styles.scrollMaskH}>
             <div
+              ref={trackRef}
               style={{
                 ...styles.scrollTrackH,
                 animation: `scrollLeft ${duration}s linear infinite`,
