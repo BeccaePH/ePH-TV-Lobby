@@ -54,17 +54,16 @@ const SYNCED_AGENTS = new Set(["Jeffrey Martin", "Austin Streets", "Tanner Janot
 
 const INITIAL_SCHEDULE = {
   "Jeffrey Martin": [],
-  "Austin Streets": [
-    { id: "seed-1", time: "09:00", client: "Paul & Pam D.", note: "" },
-  ],
-  "Tanner Janotta": [
-    { id: "seed-2", time: "09:00", client: "Linda S.", note: "" },
-    { id: "seed-3", time: "11:00", client: "Daniel & Deborah B.", note: "" },
-    { id: "seed-4", time: "12:30", client: "Barbara O.", note: "" },
-  ],
+  "Austin Streets": [],
+  "Tanner Janotta": [],
   "Jeffrey Warren": [],
   "Gina Ensslin": [],
-  "Jeanne Barrett": [],
+  "Jeanne Barrett": [
+    { id: "jb-1", time: "09:30", client: "Jeff S.", note: "" },
+    { id: "jb-2", time: "11:00", client: "Sherry R.", note: "" },
+    { id: "jb-3", time: "13:30", client: "Nancy & Tom R.", note: "" },
+    { id: "jb-4", time: "15:00", client: "Martha C.", note: "" },
+  ],
   "Michael Lewis": [],
   "Kyle Olmstead": [],
 };
@@ -73,7 +72,7 @@ const INITIAL_SCHEDULE = {
 // If the board is still open on a later (or earlier) date and hasn't been
 // refreshed yet, we hide the seeded appointments rather than show stale
 // data from the wrong day.
-const SCHEDULE_DATE = "2026-08-07";
+const SCHEDULE_DATE = "2026-08-10";
 
 const ACCENTS = ["green", "orange"];
 
@@ -547,6 +546,12 @@ const styles = {
     padding: 20,
   },
   input: {
+    border: `1px solid ${COLORS.line}`,
+    borderRadius: 8,
+    padding: "10px 14px",
+    fontSize: 18,
+  },
+  addBtn: {
     border: "none",
     background: COLORS.orange,
     color: "#fff",
