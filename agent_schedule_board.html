@@ -348,10 +348,22 @@ function AgentScheduleBoard() {
       setWelcomeFontSize(size);
     };
     fit();
-    if (typeof ResizeObserver === "undefined") return;
-    const ro = new ResizeObserver(fit);
-    ro.observe(headerEl);
-    return () => ro.disconnect();
+    // Re-fit on real viewport-size changes only — NOT via a ResizeObserver
+    // on headerEl itself. That was the bug: setting the font size changes
+    // the header's own height, which would re-trigger an observer watching
+    // that same element, which recomputes and can drift a little further
+    // each pass — over a few minutes of the ticker/appointment re-renders
+    // nudging layout, it could creep all the way up to the 107px max and
+    // get stuck there, oversized, until a full page reload reset the
+    // state fresh. Listening for window resize (plus a one-time refit once
+    // the Quicksand webfont finishes loading, since its metrics differ
+    // from the fallback font used for the very first paint) covers every
+    // real case without ever observing our own output.
+    window.addEventListener("resize", fit);
+    if (document.fonts && document.fonts.ready) {
+      document.fonts.ready.then(fit);
+    }
+    return () => window.removeEventListener("resize", fit);
   }, [away]);
 
   // The whole page is locked to the screen's height (no scrolling), and the
