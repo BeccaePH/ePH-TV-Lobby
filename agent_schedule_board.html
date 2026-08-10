@@ -168,7 +168,7 @@ function ScheduleRow({ name, accent, appts, onRemove, synced, photoUrl }) {
 
       <div style={styles.scheduleCell}>
         {sorted.length === 0 ? (
-          <div style={styles.empty}>No appointments scheduled</div>
+          <div style={styles.empty}>Busy</div>
         ) : NEEDS_SCROLL ? (
           <div style={styles.scrollMaskH}>
             <div
@@ -296,7 +296,7 @@ function AgentScheduleBoard() {
       </div>
 
       <div style={styles.board}>
-        {AGENTS.filter((name) => (isStale ? [] : schedule[name]).length > 0).map((name, i) => (
+        {AGENTS.map((name, i) => (
           <ScheduleRow
             key={name}
             name={name}
