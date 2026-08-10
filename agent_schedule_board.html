@@ -264,6 +264,49 @@ function AgentScheduleBoard() {
   // until fresh data lands.
   const isStale = localDateKey(now) !== SCHEDULE_DATE;
 
+  // The welcome message must always read as a single line, never wrap,
+  // regardless of screen width. Rather than guess a vw-based font size that
+  // might still wrap on some resolutions, we measure the real available
+  // width (header width minus logo width and gaps) against the text's
+  // natural width at a large reference size, then scale the font down just
+  // enough to fit on one line — capped at 107px so it never grows larger
+  // than the size already chosen for this header. The measurement happens
+  // on a hidden offscreen clone of the text (never on the visible h1
+  // itself), so resizing it for measurement can't fight with the font size
+  // React is actually rendering. The away-mode footer note is kept at this
+  // same font size (per the earlier "match the header" request), even
+  // though it's short enough to never need shrinking itself.
+  const welcomeText = away
+    ? "We will be right with you"
+    : "would like to welcome you to our office";
+  const headerRef = useRef(null);
+  const logoRef = useRef(null);
+  const measureRef = useRef(null);
+  const [welcomeFontSize, setWelcomeFontSize] = useState(107);
+  useEffect(() => {
+    const headerEl = headerRef.current;
+    const measureEl = measureRef.current;
+    if (!headerEl || !measureEl) return;
+    const MIN = 18;
+    const MAX = 107;
+    const GAP = 14;
+    const SAFETY = 32;
+    const fit = () => {
+      const totalW = headerEl.clientWidth;
+      const logoW = logoRef.current ? logoRef.current.getBoundingClientRect().width : 0;
+      const available = Math.max(totalW - logoW - GAP - SAFETY, 40);
+      const natural = measureEl.scrollWidth;
+      let size = natural > available ? (available / natural) * MAX : MAX;
+      size = Math.min(MAX, Math.max(MIN, size));
+      setWelcomeFontSize(size);
+    };
+    fit();
+    if (typeof ResizeObserver === "undefined") return;
+    const ro = new ResizeObserver(fit);
+    ro.observe(headerEl);
+    return () => ro.disconnect();
+  }, [away]);
+
   // The whole page is locked to the screen's height (no scrolling), and the
   // header's own height can vary a lot depending on how wide the screen is
   // (the welcome message may wrap onto one, two, or three lines). That means
@@ -329,15 +372,21 @@ function AgentScheduleBoard() {
       `}</style>
 
       <header
+        ref={headerRef}
         style={{ ...styles.header, cursor: "pointer" }}
         onClick={() => setAway((v) => !v)}
         title={away ? "Click to mark as back" : "Click to step away"}
       >
         <div style={styles.headerLeft}>
-          <img src={LOGO_URL} alt="ePlatinumHealth" style={styles.logo} />
-          <h1 style={{ ...styles.h1, color: COLORS.orange }}>
-            {away ? "We will be right with you" : "would like to welcome you to our office"}
+          <img ref={logoRef} src={LOGO_URL} alt="ePlatinumHealth" style={styles.logo} />
+          <h1
+            style={{ ...styles.h1, color: COLORS.orange, fontSize: `${welcomeFontSize}px` }}
+          >
+            {welcomeText}
           </h1>
+          <span ref={measureRef} style={styles.welcomeMeasure} aria-hidden="true">
+            {welcomeText}
+          </span>
         </div>
       </header>
 
@@ -359,7 +408,11 @@ function AgentScheduleBoard() {
         ))}
       </div>
 
-      {away && <div style={styles.awayFooter}>Thank you for your patience</div>}
+      {away && (
+        <div style={{ ...styles.awayFooter, fontSize: `${welcomeFontSize}px` }}>
+          Thank you for your patience
+        </div>
+      )}
 
       <div style={styles.panelToggleWrap}>
         <button style={styles.toggleBtn} onClick={() => setEditMode((v) => !v)}>
@@ -440,6 +493,8 @@ const styles = {
     flexWrap: "nowrap",
     justifyContent: "center",
     maxWidth: "100%",
+    position: "relative",
+    overflow: "hidden",
   },
   logo: {
     height: "clamp(28px, 3.8vw, 103px)",
@@ -455,6 +510,22 @@ const styles = {
     letterSpacing: "-0.01em",
     color: COLORS.green,
     textAlign: "center",
+    whiteSpace: "nowrap",
+  },
+  // Offscreen clone of the welcome text, always rendered at the max font
+  // size (107px), used purely to measure how wide the text would be before
+  // any shrinking — never visible, never affects layout.
+  welcomeMeasure: {
+    position: "absolute",
+    visibility: "hidden",
+    whiteSpace: "nowrap",
+    pointerEvents: "none",
+    top: 0,
+    left: 0,
+    fontSize: "107px",
+    fontWeight: 600,
+    fontFamily: "'Quicksand', 'Inter', system-ui, sans-serif",
+    letterSpacing: "-0.01em",
   },
   dateBar: {
     display: "flex",
