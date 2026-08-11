@@ -358,7 +358,26 @@ function AgentScheduleBoard() {
     if (document.fonts && document.fonts.ready) {
       document.fonts.ready.then(fit);
     }
-    return () => window.removeEventListener("resize", fit);
+    // The page also does a full reload every 5 minutes (see the
+    // meta-refresh tag in <head>) to stay fresh overnight. On that fresh
+    // mount, the very first `fit()` above can run before the logo <img>
+    // has actually finished loading/decoding, in which case its measured
+    // width reads as 0 — `fit` then thinks there's more room for the
+    // welcome text than there really is, and computes an oversized font
+    // that sticks (nothing else re-triggers `fit` until `away` toggles).
+    // Refit once the logo is actually ready to cover that race.
+    const logoEl = logoRef.current;
+    if (logoEl) {
+      if (logoEl.complete) {
+        fit();
+      } else {
+        logoEl.addEventListener("load", fit);
+      }
+    }
+    return () => {
+      window.removeEventListener("resize", fit);
+      if (logoEl) logoEl.removeEventListener("load", fit);
+    };
   }, [away]);
 
   // The whole page is locked to the screen's height (no scrolling), and the
