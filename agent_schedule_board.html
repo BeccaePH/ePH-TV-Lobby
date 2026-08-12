@@ -315,12 +315,18 @@ function AgentScheduleBoard() {
   // than the size already chosen for this header. The measurement happens
   // on a hidden offscreen clone of the text (never on the visible h1
   // itself), so resizing it for measurement can't fight with the font size
-  // React is actually rendering. The away-mode footer note is kept at this
-  // same font size (per the earlier "match the header" request), even
-  // though it's short enough to never need shrinking itself.
-  const welcomeText = away
-    ? "We will be right with you"
-    : "would like to welcome you to our office";
+  // React is actually rendering.
+  //
+  // The hidden measurement clone always renders NORMAL_WELCOME_TEXT (the
+  // longer, everyday greeting), never the away-mode message — so the
+  // computed size is always "whatever fits the normal header," and away
+  // mode's shorter message just reuses that same size rather than being
+  // fit to its own (shorter) natural width. Away mode's text is always
+  // shorter, so it's guaranteed to fit at that size too; this just keeps
+  // the away header and footer visually matching the main header instead
+  // of rendering larger because a shorter phrase had more room to spare.
+  const NORMAL_WELCOME_TEXT = "would like to welcome you to our office";
+  const welcomeText = away ? "We will be right with you" : NORMAL_WELCOME_TEXT;
   const headerRef = useRef(null);
   const logoRef = useRef(null);
   const measureRef = useRef(null);
@@ -364,8 +370,8 @@ function AgentScheduleBoard() {
     // has actually finished loading/decoding, in which case its measured
     // width reads as 0 — `fit` then thinks there's more room for the
     // welcome text than there really is, and computes an oversized font
-    // that sticks (nothing else re-triggers `fit` until `away` toggles).
-    // Refit once the logo is actually ready to cover that race.
+    // that sticks (nothing else re-triggers `fit` otherwise). Refit once
+    // the logo is actually ready to cover that race.
     const logoEl = logoRef.current;
     if (logoEl) {
       if (logoEl.complete) {
@@ -378,7 +384,10 @@ function AgentScheduleBoard() {
       window.removeEventListener("resize", fit);
       if (logoEl) logoEl.removeEventListener("load", fit);
     };
-  }, [away]);
+    // No `away` dependency: the measurement clone below always renders
+    // NORMAL_WELCOME_TEXT regardless of away mode, so there's nothing to
+    // re-fit when away toggles — the same computed size just gets reused.
+  }, []);
 
   // The whole page is locked to the screen's height (no scrolling), and the
   // header's own height can vary a lot depending on how wide the screen is
@@ -458,7 +467,7 @@ function AgentScheduleBoard() {
             {welcomeText}
           </h1>
           <span ref={measureRef} style={styles.welcomeMeasure} aria-hidden="true">
-            {welcomeText}
+            {NORMAL_WELCOME_TEXT}
           </span>
         </div>
       </header>
