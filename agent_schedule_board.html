@@ -414,6 +414,59 @@ function AgentScheduleBoard() {
     return () => ro.disconnect();
   }, []);
 
+  // The board's height used to just be "whatever's left over" in the flex
+  // column after the header, date bar, and the "Add appointments" button
+  // (and its form, when open). That meant switching into away mode — which
+  // adds the "Thank you for your patience" footer below the board — shrank
+  // the board a little to make room for it, so the schedule itself was a
+  // slightly different size on the away screen than on the normal one.
+  //
+  // Instead, the board's height is computed explicitly here from the
+  // viewport height minus every OTHER sibling's real measured size —
+  // deliberately never including the away footer in that subtraction, so
+  // the board comes out the same size whether away mode's footer is
+  // present or not. If there isn't enough room left for everything below
+  // the board once the footer is added, the footer and whatever follows it
+  // (the "Add appointments" button, and its form if open) simply run past
+  // the bottom of the screen and get clipped by the page's own
+  // `overflow: hidden` — the schedule staying a consistent size takes
+  // priority over that button staying visible on the away screen.
+  const dateBarRef = useRef(null);
+  const panelToggleWrapRef = useRef(null);
+  const formRef = useRef(null);
+  const [boardHeightPx, setBoardHeightPx] = useState(null);
+  useEffect(() => {
+    const PAGE_PADDING_TOP = 32;
+    const PAGE_PADDING_BOTTOM = 24;
+    const HEADER_MARGIN_BOTTOM = 20;
+    const DATE_BAR_MARGIN_BOTTOM = 20;
+    const PANEL_TOGGLE_MARGIN_TOP = 24;
+    const FORM_MARGIN_TOP = 18;
+    const measure = () => {
+      const headerH = headerRef.current ? headerRef.current.getBoundingClientRect().height : 0;
+      const dateBarH = dateBarRef.current ? dateBarRef.current.getBoundingClientRect().height : 0;
+      const panelToggleH = panelToggleWrapRef.current
+        ? panelToggleWrapRef.current.getBoundingClientRect().height
+        : 0;
+      const formH = formRef.current ? formRef.current.getBoundingClientRect().height : 0;
+      const total =
+        window.innerHeight -
+        PAGE_PADDING_TOP -
+        PAGE_PADDING_BOTTOM -
+        headerH -
+        HEADER_MARGIN_BOTTOM -
+        dateBarH -
+        DATE_BAR_MARGIN_BOTTOM -
+        panelToggleH -
+        PANEL_TOGGLE_MARGIN_TOP -
+        (formRef.current ? formH + FORM_MARGIN_TOP : 0);
+      setBoardHeightPx(Math.max(total, 0));
+    };
+    measure();
+    window.addEventListener("resize", measure);
+    return () => window.removeEventListener("resize", measure);
+  });
+
   const addAppt = (e) => {
     e.preventDefault();
     if (!form.time || !form.client.trim()) return;
@@ -472,11 +525,17 @@ function AgentScheduleBoard() {
         </div>
       </header>
 
-      <div style={styles.dateBar}>
+      <div style={styles.dateBar} ref={dateBarRef}>
         <div style={styles.dateBox}>{today}</div>
       </div>
 
-      <div style={styles.board} ref={boardRef}>
+      <div
+        style={{
+          ...styles.board,
+          height: boardHeightPx != null ? `${boardHeightPx}px` : undefined,
+        }}
+        ref={boardRef}
+      >
         {AGENTS.map((name, i) => (
           <ScheduleRow
             key={name}
@@ -497,14 +556,14 @@ function AgentScheduleBoard() {
         </div>
       )}
 
-      <div style={styles.panelToggleWrap}>
+      <div style={styles.panelToggleWrap} ref={panelToggleWrapRef}>
         <button style={styles.toggleBtn} onClick={() => setEditMode((v) => !v)}>
           {editMode ? "Hide entry panel" : "Add appointments"}
         </button>
       </div>
 
       {editMode && (
-        <form onSubmit={addAppt} style={styles.form}>
+        <form onSubmit={addAppt} style={styles.form} ref={formRef}>
           <select
             value={form.agent}
             onChange={(e) => setForm((f) => ({ ...f, agent: e.target.value }))}
@@ -634,8 +693,12 @@ const styles = {
     borderRadius: 14,
     overflow: "hidden",
     background: "#fff",
-    flex: 1,
-    minHeight: 0,
+    // Height is set explicitly via inline style (computed in JS, always
+    // excluding the away-mode footer) rather than flex-grow, so the board
+    // stays the same size whether that footer is present or not — see the
+    // boardHeightPx effect above.
+    flexShrink: 0,
+    flexGrow: 0,
   },
   row: {
     display: "flex",
