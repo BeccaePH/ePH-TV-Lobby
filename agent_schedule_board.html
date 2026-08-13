@@ -82,7 +82,7 @@ const INITIAL_SCHEDULE = {
   "Jeanne Barrett": [
     { id: "jb-2026-08-13-1", time: "11:00", client: "Susan P." },
     { id: "jb-2026-08-13-2", time: "13:30", client: "Kristin N." },
-    { id: "jb-2026-08-13-3", time: "15:00", client: "Deb D.", note: "Planning Meeting" },
+    { id: "jb-2026-08-13-3", time: "15:00", client: "Deb D." },
   ],
   "Michael Lewis": [],
   "Kyle Olmstead": [],
@@ -196,7 +196,6 @@ function ScheduleRow({ name, accent, appts, onRemove, synced, photoUrl, now }) {
         {toDisplay(a.time)}
       </span>
       <span style={styles.client}>{a.client}</span>
-      {a.note ? <span style={styles.note}>{a.note}</span> : null}
       {onRemove && !hidden && (
         <button
           onClick={() => onRemove(a.id)}
@@ -256,7 +255,6 @@ function ScheduleRow({ name, accent, appts, onRemove, synced, photoUrl, now }) {
                   {toDisplay(a.time)}
                 </span>
                 <span style={styles.client}>{a.client}</span>
-                {a.note ? <span style={styles.note}>{a.note}</span> : null}
                 {onRemove && (
                   <button
                     onClick={() => onRemove(a.id)}
@@ -277,7 +275,7 @@ function ScheduleRow({ name, accent, appts, onRemove, synced, photoUrl, now }) {
 
 function AgentScheduleBoard() {
   const [schedule, setSchedule] = useState(INITIAL_SCHEDULE);
-  const [form, setForm] = useState({ agent: AGENTS[0], time: "", client: "", note: "" });
+  const [form, setForm] = useState({ agent: AGENTS[0], time: "", client: "" });
   const [editMode, setEditMode] = useState(false);
 
   // Drives the ticker: each row advances to its next appointment only once
@@ -512,13 +510,12 @@ function AgentScheduleBoard() {
       id: `${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
       time: form.time,
       client: form.client.trim(),
-      note: form.note.trim(),
     };
     setSchedule((prev) => ({
       ...prev,
       [form.agent]: [...prev[form.agent], entry],
     }));
-    setForm((f) => ({ ...f, time: "", client: "", note: "" }));
+    setForm((f) => ({ ...f, time: "", client: "" }));
   };
 
   const removeAppt = (agent, id) => {
@@ -626,13 +623,6 @@ function AgentScheduleBoard() {
             required
             value={form.client}
             onChange={(e) => setForm((f) => ({ ...f, client: e.target.value }))}
-            style={{ ...styles.input, flex: 1, minWidth: 140 }}
-          />
-          <input
-            type="text"
-            placeholder="Note (optional)"
-            value={form.note}
-            onChange={(e) => setForm((f) => ({ ...f, note: e.target.value }))}
             style={{ ...styles.input, flex: 1, minWidth: 140 }}
           />
           <button type="submit" style={styles.addBtn}>
@@ -835,7 +825,6 @@ const styles = {
   },
   time: { fontWeight: 700, minWidth: 140 },
   client: { fontWeight: 600 },
-  note: { color: COLORS.muted, fontSize: "clamp(9px, calc(var(--row-h, 108px) * 0.24), 26px)" },
   removeBtn: {
     marginLeft: "auto",
     border: "none",
