@@ -193,7 +193,50 @@ function ScheduleRow({ name, accent, appts, onRemove, synced, photoUrl, now }) {
   // repeated first appointment is already sliding in behind it. The only
   // seam is the normal item-to-item divider gap, i.e. a small break, never
   // a stretch of empty track.
-  const NEEDS_SCROLL = sorted.length > 3;
+  //
+  // Appointment count alone isn't a reliable signal, though: even a single
+  // appointment can have a client name too long to fit the row's available
+  // width (e.g. a shared couple's name), and the static layout has no
+  // wrapping -- it would just get silently clipped by scheduleCell's
+  // `overflow: hidden` with no way to ever read the rest of it. So on top
+  // of the count-based trigger, a hidden probe copy of the appointment
+  // list (measureRowRef below) is kept in the DOM purely to measure its
+  // natural, unwrapped width against the visible cell's actual width
+  // (cellRef) -- if it doesn't fit, fall back to the scrolling ticker
+  // regardless of how many appointments there are.
+  const NEEDS_SCROLL_BY_COUNT = sorted.length > 3;
+  const cellRef = useRef(null);
+  const measureRowRef = useRef(null);
+  const [overflowsWidth, setOverflowsWidth] = useState(false);
+  useEffect(() => {
+    const cellEl = cellRef.current;
+    const measureEl = measureRowRef.current;
+    if (!cellEl || !measureEl) return;
+    const measure = () => {
+      // cellEl.clientWidth includes its own left/right padding, but the
+      // absolutely-positioned measureEl is positioned relative to the
+      // padding edge (top:0/left:0 ignores that padding entirely) --  so
+      // comparing straight against clientWidth overstates how much room
+      // is really available and under-detects overflow. Subtract the
+      // actual computed padding to get the true inner content width.
+      const cs = getComputedStyle(cellEl);
+      const paddingLeft = parseFloat(cs.paddingLeft) || 0;
+      const paddingRight = parseFloat(cs.paddingRight) || 0;
+      const available = cellEl.clientWidth - paddingLeft - paddingRight;
+      setOverflowsWidth(measureEl.scrollWidth > available);
+    };
+    measure();
+    if (typeof ResizeObserver === "undefined") {
+      window.addEventListener("resize", measure);
+      return () => window.removeEventListener("resize", measure);
+    }
+    const ro = new ResizeObserver(measure);
+    ro.observe(cellEl);
+    ro.observe(measureEl);
+    return () => ro.disconnect();
+  }, [sorted]);
+
+  const NEEDS_SCROLL = NEEDS_SCROLL_BY_COUNT || overflowsWidth;
 
   // Speed is a fixed pixels-per-second rate, not a count-based guess, so
   // every row's ticker glides at the exact same real-world pace regardless
@@ -261,7 +304,15 @@ function ScheduleRow({ name, accent, appts, onRemove, synced, photoUrl, now }) {
         <span style={styles.name}>{name}</span>
       </div>
 
-      <div style={styles.scheduleCell}>
+      <div style={styles.scheduleCell} ref={cellRef}>
+        {/* Hidden probe: renders one copy of the appointment list
+            off-screen, purely so its natural (unwrapped) width can be
+            measured against the visible cell above (cellRef). Never
+            shown, never affects layout -- see the NEEDS_SCROLL comment
+            above. */}
+        <div ref={measureRowRef} style={styles.measureRowH} aria-hidden="true">
+          {sorted.map((a, i) => renderAppt(a, `measure-${a.id ?? i}`, true))}
+        </div>
         {sorted.length === 0 ? (
           <div style={styles.empty}>Busy</div>
         ) : NEEDS_SCROLL ? (
@@ -865,6 +916,21 @@ const styles = {
     flex: 1,
     minWidth: 0,
     height: "100%",
+    position: "relative",
+  },
+  // Offscreen probe copy of the appointment list, used purely to measure
+  // its natural unwrapped width -- see the NEEDS_SCROLL comment in
+  // ScheduleRow. Never visible, never affects layout.
+  measureRowH: {
+    position: "absolute",
+    visibility: "hidden",
+    whiteSpace: "nowrap",
+    pointerEvents: "none",
+    display: "flex",
+    flexDirection: "row",
+    alignItems: "center",
+    top: 0,
+    left: 0,
   },
   empty: {
     fontSize: "clamp(10px, calc(var(--row-h, 108px) * 0.278), 30px)",
