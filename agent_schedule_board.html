@@ -50,6 +50,27 @@ const AGENTS = [
 // in this set per Tanner's decision to trust it as-is. Gina Ensslin,
 // Kyle Olmstead, and Michael Lewis remain manual entry until a calendar
 // source is set up for them.
+//
+// NOTE on Jeanne Barrett's calendar (source: jjeanneinsurance@gmail.com,
+// an external Gmail calendar -- not a myeph.com Workspace calendar like
+// the other synced agents use). Her real client appointments are titled
+// differently than everyone else's, which is why they were getting missed
+// when pulling her schedule:
+//   "In Person - <Client Full Name> - <phone number> - Jeanne Barrett"
+// sometimes with a purpose inserted before her name, e.g.:
+//   "In Person - <Client Full Name> - <phone number> ** Planning Meeting - Jeanne Barrett"
+// So: her name always appears at the END of the summary (not the start,
+// and not omitted, the way other agents' calendars work), and the client
+// name is the second "-"-separated segment, right after "In Person". Her
+// calendar also contains occasional non-appointment personal/travel
+// blocks (e.g. a multi-day "Aimee - Florida - Multiple Users" trip) --
+// skip anything that isn't in the "In Person - ... - Jeanne Barrett"
+// shape, and skip anything spanning multiple days. When adding her
+// appointments here, use "First L." for the client name (matching the
+// privacy convention used for every agent's appointments on this public
+// board) and never carry over the phone number or any call notes/health
+// details from the calendar description -- those are not safe to display
+// on a lobby TV and should never appear here.
 const SYNCED_AGENTS = new Set(["Jeffrey Martin", "Austin Streets", "Tanner Janotta", "Jeanne Barrett", "Jeffrey Warren"]);
 
 const INITIAL_SCHEDULE = {
@@ -58,7 +79,11 @@ const INITIAL_SCHEDULE = {
   "Tanner Janotta": [],
   "Jeffrey Warren": [],
   "Gina Ensslin": [],
-  "Jeanne Barrett": [],
+  "Jeanne Barrett": [
+    { id: "jb-2026-08-13-1", time: "11:00", client: "Susan P." },
+    { id: "jb-2026-08-13-2", time: "13:30", client: "Kristin N." },
+    { id: "jb-2026-08-13-3", time: "15:00", client: "Deb D.", note: "Planning Meeting" },
+  ],
   "Michael Lewis": [],
   "Kyle Olmstead": [],
 };
