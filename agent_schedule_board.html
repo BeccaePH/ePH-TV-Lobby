@@ -71,12 +71,42 @@ const AGENTS = [
 // board) and never carry over the phone number or any call notes/health
 // details from the calendar description -- those are not safe to display
 // on a lobby TV and should never appear here.
+//
+// NOTE on Austin Streets' and Tanner Janotta's calendars (myeph.com
+// Workspace calendars). Their real client appointments are titled with an
+// internal code prefix, e.g. "NCAP: <Client Name> (<status notes>)",
+// "NCMP: ...", "NTAP: ...", "NTMV: ...", "NTAOX2: ...", "NTAVX2: ...",
+// "NTMH: ..." -- the code itself doesn't matter for display, just treat
+// anything titled "<CODE>: <Client Name...>" as a candidate appointment
+// and take the name(s) right after the colon.
+//
+// Critically, NOT every one of these is a real in-person lobby visit --
+// their calendars mix in phone consults and off-site home visits, and
+// this board should only ever show appointments where the client is
+// actually walking into the office:
+//   - If the event's location is a phone number (its own field, not just
+//     mentioned in the description) -- it's a phone consult, skip it.
+//   - If the event has a conferenceUrl (Google Meet/Teams link) -- it's
+//     virtual, skip it.
+//   - If the event's location is an outside address (a client's home,
+//     etc.) -- it's a house call, skip it.
+//   - Only include it if the location is clearly the office itself (e.g.
+//     a named internal meeting room like "Martin Plaza-2-EPH MEET (5)").
+//     If the location is blank or otherwise unclear, leave it off the
+//     board rather than risk showing a client who was never actually
+//     coming in.
+// As always, display client names as "First L." only, and never carry
+// over phone numbers, health details, or income/financial info from the
+// event description.
 const SYNCED_AGENTS = new Set(["Jeffrey Martin", "Austin Streets", "Tanner Janotta", "Jeanne Barrett", "Jeffrey Warren"]);
 
 const INITIAL_SCHEDULE = {
   "Jeffrey Martin": [],
   "Austin Streets": [],
-  "Tanner Janotta": [],
+  "Tanner Janotta": [
+    { id: "tj-2026-08-13-1", time: "16:00", client: "Greg M." },
+    { id: "tj-2026-08-13-2", time: "17:30", client: "Nathan D." },
+  ],
   "Jeffrey Warren": [],
   "Gina Ensslin": [],
   "Jeanne Barrett": [
