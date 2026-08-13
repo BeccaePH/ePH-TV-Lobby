@@ -303,8 +303,57 @@ function ScheduleRow({ name, accent, appts, onRemove, synced, photoUrl, now }) {
   );
 }
 
+// Anything added through the on-page "Add appointments" panel only ever
+// lived in this component's React state -- nothing tied it to anything
+// more durable. That's a problem because the page auto-reloads itself
+// every 5 minutes (see the meta-refresh tag in <head>), which throws away
+// all React state on every reload. In practice that meant a manually
+// added appointment could vanish within minutes, with no warning.
+//
+// Fixed the same way "away mode" below already survives the auto-refresh:
+// persist to localStorage, tagged with the schedule date it belongs to.
+// On load, if the stored date still matches today's SCHEDULE_DATE, restore
+// the saved schedule (including manual additions/removals) instead of
+// starting over from INITIAL_SCHEDULE. Once SCHEDULE_DATE moves to a new
+// day (the daily 8am refresh pushes a new file with fresh real
+// appointments), the stored date no longer matches, so it's ignored and
+// the fresh INITIAL_SCHEDULE from the file is used instead -- yesterday's
+// manual entries never leak into a new day.
+//
+// Caveat worth knowing: localStorage is per-browser/per-device. If the
+// board is open on more than one screen (e.g. the lobby TV and someone's
+// laptop), a manual addition made on one won't appear on the other --
+// each keeps its own local copy for the rest of the day.
+const SCHEDULE_STORAGE_KEY = "eph_schedule";
+const SCHEDULE_STORAGE_DATE_KEY = "eph_schedule_date";
+
+function loadStoredSchedule() {
+  try {
+    if (
+      localStorage.getItem(SCHEDULE_STORAGE_DATE_KEY) === SCHEDULE_DATE &&
+      localStorage.getItem(SCHEDULE_STORAGE_KEY)
+    ) {
+      return JSON.parse(localStorage.getItem(SCHEDULE_STORAGE_KEY));
+    }
+  } catch (e) {
+    // Corrupted or unavailable storage (e.g. private browsing) -- fall
+    // back to the file's baked-in schedule below rather than breaking.
+  }
+  return null;
+}
+
 function AgentScheduleBoard() {
-  const [schedule, setSchedule] = useState(INITIAL_SCHEDULE);
+  const [schedule, setSchedule] = useState(() => loadStoredSchedule() || INITIAL_SCHEDULE);
+  useEffect(() => {
+    try {
+      localStorage.setItem(SCHEDULE_STORAGE_KEY, JSON.stringify(schedule));
+      localStorage.setItem(SCHEDULE_STORAGE_DATE_KEY, SCHEDULE_DATE);
+    } catch (e) {
+      // Ignore storage write failures (e.g. quota exceeded in private
+      // browsing) -- the board still works for this session, it just
+      // won't survive the next auto-refresh in that case.
+    }
+  }, [schedule]);
   const [form, setForm] = useState({ agent: AGENTS[0], time: "", client: "" });
   const [editMode, setEditMode] = useState(false);
 
