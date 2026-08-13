@@ -80,21 +80,15 @@ const AGENTS = [
 // anything titled "<CODE>: <Client Name...>" as a candidate appointment
 // and take the name(s) right after the colon.
 //
-// Critically, NOT every one of these is a real in-person lobby visit --
-// their calendars mix in phone consults and off-site home visits, and
-// this board should only ever show appointments where the client is
-// actually walking into the office:
-//   - If the event's location is a phone number (its own field, not just
-//     mentioned in the description) -- it's a phone consult, skip it.
-//   - If the event has a conferenceUrl (Google Meet/Teams link) -- it's
-//     virtual, skip it.
+// Their calendars also mix in home visits (house calls at a client's own
+// address) alongside phone consults and real office visits. Phone and
+// in-person/office appointments are both shown on this board -- only
+// home visits are excluded, since that's the one category where the
+// client definitely isn't coming into the office:
 //   - If the event's location is an outside address (a client's home,
 //     etc.) -- it's a house call, skip it.
-//   - Only include it if the location is clearly the office itself (e.g.
-//     a named internal meeting room like "Martin Plaza-2-EPH MEET (5)").
-//     If the location is blank or otherwise unclear, leave it off the
-//     board rather than risk showing a client who was never actually
-//     coming in.
+//   - Otherwise (a phone number, a conferenceUrl/virtual meeting, an
+//     office meeting room, or no location at all) -- include it.
 // As always, display client names as "First L." only, and never carry
 // over phone numbers, health details, or income/financial info from the
 // event description.
@@ -102,10 +96,16 @@ const SYNCED_AGENTS = new Set(["Jeffrey Martin", "Austin Streets", "Tanner Janot
 
 const INITIAL_SCHEDULE = {
   "Jeffrey Martin": [],
-  "Austin Streets": [],
+  "Austin Streets": [
+    { id: "as-2026-08-13-1", time: "16:00", client: "Alexandra S." },
+  ],
   "Tanner Janotta": [
-    { id: "tj-2026-08-13-1", time: "16:00", client: "Greg M." },
-    { id: "tj-2026-08-13-2", time: "17:30", client: "Nathan D." },
+    { id: "tj-2026-08-13-1", time: "09:00", client: "Daniel & Kimberly R." },
+    { id: "tj-2026-08-13-2", time: "10:00", client: "Bonnie M." },
+    { id: "tj-2026-08-13-3", time: "11:15", client: "Karen L." },
+    { id: "tj-2026-08-13-4", time: "15:00", client: "Christina R." },
+    { id: "tj-2026-08-13-5", time: "16:00", client: "Greg M." },
+    { id: "tj-2026-08-13-6", time: "17:30", client: "Nathan D." },
   ],
   "Jeffrey Warren": [],
   "Gina Ensslin": [],
