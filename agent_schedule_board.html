@@ -121,6 +121,15 @@ const SCHEDULE_DATE = "2026-08-18";
 
 const ACCENTS = ["green", "orange"];
 
+// Agents with at least one appointment still showing today are rendered
+// larger (photo, dot, and name) than agents currently showing "Busy" --
+// so the board visually foregrounds who actually has clients coming in.
+// These multiply the normal --row-h-based sizing in the nameCell styles
+// below via the --identity-scale CSS variable, set per-row in ScheduleRow
+// based on that row's own (live-filtered) appointment list.
+const BUSY_SCALE = 0.78;
+const ACTIVE_SCALE = 1.18;
+
 const COLORS = {
   green: "#81C242",
   darkGreen: "#3F6B1C",
@@ -279,7 +288,13 @@ function ScheduleRow({ name, accent, appts, onRemove, synced, photoUrl, now }) {
 
   return (
     <div style={styles.row}>
-      <div style={{ ...styles.nameCell, borderColor: COLORS[accent] }}>
+      <div
+        style={{
+          ...styles.nameCell,
+          borderColor: COLORS[accent],
+          "--identity-scale": sorted.length === 0 ? BUSY_SCALE : ACTIVE_SCALE,
+        }}
+      >
         {photoUrl && !imgFailed ? (
           <img
             src={photoUrl}
@@ -872,15 +887,20 @@ const styles = {
     flexShrink: 0,
     flexWrap: "wrap",
   },
+  // Each of these multiplies by --identity-scale (set per-row in
+  // ScheduleRow via BUSY_SCALE / ACTIVE_SCALE) on top of the normal
+  // --row-h-based sizing, so agents with appointments render larger than
+  // "Busy" agents. Upper clamp bounds are raised above the old flat caps
+  // to leave headroom for the ACTIVE_SCALE boost.
   dot: {
-    width: "clamp(6px, calc(var(--row-h, 108px) * 0.148), 16px)",
-    height: "clamp(6px, calc(var(--row-h, 108px) * 0.148), 16px)",
+    width: "clamp(5px, calc(var(--row-h, 108px) * 0.148 * var(--identity-scale, 1)), 19px)",
+    height: "clamp(5px, calc(var(--row-h, 108px) * 0.148 * var(--identity-scale, 1)), 19px)",
     borderRadius: "50%",
     flexShrink: 0,
   },
   photo: {
-    width: "clamp(26px, calc(var(--row-h, 108px) * 0.7), 76px)",
-    height: "clamp(26px, calc(var(--row-h, 108px) * 0.7), 76px)",
+    width: "clamp(20px, calc(var(--row-h, 108px) * 0.7 * var(--identity-scale, 1)), 90px)",
+    height: "clamp(20px, calc(var(--row-h, 108px) * 0.7 * var(--identity-scale, 1)), 90px)",
     borderRadius: "50%",
     objectFit: "cover",
     border: "4px solid",
@@ -888,8 +908,8 @@ const styles = {
     flexShrink: 0,
   },
   photoFallback: {
-    width: "clamp(26px, calc(var(--row-h, 108px) * 0.7), 76px)",
-    height: "clamp(26px, calc(var(--row-h, 108px) * 0.7), 76px)",
+    width: "clamp(20px, calc(var(--row-h, 108px) * 0.7 * var(--identity-scale, 1)), 90px)",
+    height: "clamp(20px, calc(var(--row-h, 108px) * 0.7 * var(--identity-scale, 1)), 90px)",
     borderRadius: "50%",
     border: "4px solid",
     boxSizing: "border-box",
@@ -897,12 +917,15 @@ const styles = {
     display: "flex",
     alignItems: "center",
     justifyContent: "center",
-    fontSize: "clamp(10px, calc(var(--row-h, 108px) * 0.25), 27px)",
+    fontSize: "clamp(8px, calc(var(--row-h, 108px) * 0.25 * var(--identity-scale, 1)), 32px)",
     fontWeight: 700,
     color: COLORS.muted,
     background: "#f0efe9",
   },
-  name: { fontWeight: 700, fontSize: "clamp(12px, calc(var(--row-h, 108px) * 0.333), 36px)" },
+  name: {
+    fontWeight: 700,
+    fontSize: "clamp(9px, calc(var(--row-h, 108px) * 0.333 * var(--identity-scale, 1)), 43px)",
+  },
   scheduleCell: {
     padding: "0 30px",
     display: "flex",
