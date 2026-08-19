@@ -974,7 +974,13 @@ const styles = {
     fontWeight: 600,
     fontStyle: "italic",
     color: COLORS.quietText,
-    borderTop: `1px solid ${COLORS.line}`,
+    borderTop: "2px solid #000",
+    // The board's flex `gap` (3px) inserts space above every flex child,
+    // including this one -- which left a sliver of white between the last
+    // appointment row and the black divider above. Pulling the strip up by
+    // that same 3px closes the gap so the row, the black line, and the
+    // message read as one continuous, seamless block.
+    marginTop: -3,
   },
   row: {
     display: "flex",
