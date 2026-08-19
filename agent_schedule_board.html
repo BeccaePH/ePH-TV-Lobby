@@ -118,13 +118,14 @@ const SCHEDULE_DATE = "2026-08-19";
 
 const ACCENTS = ["green", "orange"];
 
-// Agents with at least one appointment still showing today are rendered
-// larger (photo, dot, and name) than agents currently showing "Busy" --
-// so the board visually foregrounds who actually has clients coming in.
-// These multiply the normal --row-h-based sizing in the nameCell styles
-// below via the --identity-scale CSS variable, set per-row in ScheduleRow
-// based on that row's own (live-filtered) appointment list.
-const BUSY_SCALE = 0.78;
+// Only agents with at least one appointment still showing today are ever
+// rendered as a row at all now (see the visibleAgents filter in
+// AgentScheduleBoard below) -- there's no more "Busy" row to contrast
+// against, so every rendered row uses this same boost over the normal
+// --row-h-based sizing in the nameCell styles below via the
+// --identity-scale CSS variable. Kept as a named constant (rather than
+// folding 1.25 directly into each clamp()) so it's one obvious place to
+// retune if the sizing ever needs to change again.
 const ACTIVE_SCALE = 1.25;
 
 const COLORS = {
@@ -163,28 +164,26 @@ function toDisplay(time) {
   return `${h12}:${String(m).padStart(2, "0")} ${period}`;
 }
 
+// An appointment stays visible through its scheduled time and for a
+// 20-minute grace period after — long enough for it to still be glanced at
+// while it's presumably wrapping up — then drops off entirely rather than
+// sitting there stale. This is a module-level helper (not just inside
+// ScheduleRow) because AgentScheduleBoard also needs it: it now decides
+// which agents to render as rows at all based on this same "does this
+// agent currently have any appointment left today" check, not just
+// how each shown row renders its own list.
+const DROP_OFF_GRACE_MINUTES = 20;
+function getVisibleAppts(appts, now) {
+  const nowMinutes = now.getHours() * 60 + now.getMinutes();
+  return [...appts]
+    .filter((a) => toMinutes(a.time) + DROP_OFF_GRACE_MINUTES > nowMinutes)
+    .sort((a, b) => to24(a.time).localeCompare(to24(b.time)));
+}
+
 function ScheduleRow({ name, accent, appts, onRemove, synced, photoUrl, now }) {
   const [imgFailed, setImgFailed] = useState(false);
 
-  // An appointment stays visible through its scheduled time and for a
-  // 20-minute grace period after — long enough for it to still be glanced
-  // at while it's presumably wrapping up — then drops off the list
-  // entirely rather than sitting there stale. `now` is refreshed by the
-  // parent every 30 seconds, so this re-filters automatically without any
-  // extra timers here.
-  const DROP_OFF_GRACE_MINUTES = 20;
-  const nowMinutes = useMemo(
-    () => now.getHours() * 60 + now.getMinutes(),
-    [now]
-  );
-
-  const sorted = useMemo(
-    () =>
-      [...appts]
-        .filter((a) => toMinutes(a.time) + DROP_OFF_GRACE_MINUTES > nowMinutes)
-        .sort((a, b) => to24(a.time).localeCompare(to24(b.time))),
-    [appts, nowMinutes]
-  );
+  const sorted = useMemo(() => getVisibleAppts(appts, now), [appts, now]);
 
   // If there are few enough appointments to comfortably show all at once,
   // just lay them out statically — no scrolling needed. Otherwise, fall back
@@ -289,7 +288,7 @@ function ScheduleRow({ name, accent, appts, onRemove, synced, photoUrl, now }) {
         style={{
           ...styles.nameCell,
           borderColor: COLORS[accent],
-          "--identity-scale": sorted.length === 0 ? BUSY_SCALE : ACTIVE_SCALE,
+          "--identity-scale": ACTIVE_SCALE,
         }}
       >
         {photoUrl && !imgFailed ? (
@@ -467,6 +466,17 @@ function AgentScheduleBoard() {
   // until fresh data lands.
   const isStale = localDateKey(now) !== SCHEDULE_DATE;
 
+  // Only agents who currently have at least one appointment left today
+  // (per the same drop-off/grace-period rule each row uses to filter its
+  // own list) get a row on the board at all -- no more "Busy" rows or
+  // blank time slots taking up space. This is recomputed on every render,
+  // so as an agent's last appointment ages past its grace period, or a new
+  // one gets added, they'll drop off or appear within the next `now` tick
+  // (every 30s) or the next manual schedule edit.
+  const visibleAgents = AGENTS.filter(
+    (name) => getVisibleAppts(isStale ? [] : schedule[name], now).length > 0
+  );
+
   // The welcome message must always read as a single line, never wrap,
   // regardless of screen width. Rather than guess a vw-based font size that
   // might still wrap on some resolutions, we measure the real available
@@ -553,27 +563,39 @@ function AgentScheduleBoard() {
   // The whole page is locked to the screen's height (no scrolling), and the
   // header's own height can vary a lot depending on how wide the screen is
   // (the welcome message may wrap onto one, two, or three lines). That means
-  // the space actually left over for each of the 8 agent rows isn't a fixed
-  // number we can guess with vh-based CSS alone. Instead we measure the
-  // board's real rendered height on every resize and publish it as a CSS
-  // variable, so photo size / name size / appointment text size can all
-  // scale to whatever room is truly available and never get clipped.
+  // the space actually left over for the agent rows isn't a fixed number we
+  // can guess with vh-based CSS alone. Instead we measure the board's real
+  // rendered height and publish it as a CSS variable, so photo size / name
+  // size / appointment text size can all scale to whatever room is truly
+  // available and never get clipped.
+  //
+  // Row count is no longer always 8 -- only agents with a live appointment
+  // get a row (see visibleAgents above) -- so instead of dividing by a
+  // fixed AGENTS.length, this divides by however many rows are actually
+  // showing right now, and re-runs whenever that count changes (not just on
+  // a real viewport resize) so the remaining rows grow to fill the board
+  // rather than leaving empty space when fewer agents qualify.
   const boardRef = useRef(null);
+  const visibleRowCount = visibleAgents.length;
   useEffect(() => {
     const el = boardRef.current;
-    if (!el || typeof ResizeObserver === "undefined") return;
+    if (!el) return;
     const GAP = 3;
-    const update = (height) => {
-      const rowH = (height - GAP * (AGENTS.length - 1)) / AGENTS.length;
+    const count = Math.max(visibleRowCount, 1);
+    const update = () => {
+      const height = el.getBoundingClientRect().height;
+      const rowH = (height - GAP * (count - 1)) / count;
       el.style.setProperty("--row-h", `${Math.max(rowH, 0)}px`);
     };
-    update(el.getBoundingClientRect().height);
-    const ro = new ResizeObserver((entries) => {
-      for (const entry of entries) update(entry.contentRect.height);
-    });
+    update();
+    if (typeof ResizeObserver === "undefined") {
+      window.addEventListener("resize", update);
+      return () => window.removeEventListener("resize", update);
+    }
+    const ro = new ResizeObserver(update);
     ro.observe(el);
     return () => ro.disconnect();
-  }, []);
+  }, [visibleRowCount]);
 
   // The board's height used to just be "whatever's left over" in the flex
   // column after the header, date bar, and the "Add appointments" button
@@ -709,18 +731,22 @@ function AgentScheduleBoard() {
         }}
         ref={boardRef}
       >
-        {AGENTS.map((name, i) => (
-          <ScheduleRow
-            key={name}
-            name={name}
-            accent={ACCENTS[i % 2]}
-            appts={isStale ? [] : schedule[name]}
-            onRemove={editMode ? (id) => removeAppt(name, id) : null}
-            synced={SYNCED_AGENTS.has(name)}
-            photoUrl={AGENT_PHOTOS[name]}
-            now={now}
-          />
-        ))}
+        {visibleAgents.length === 0 ? (
+          <div style={styles.emptyBoard}>Nothing on the schedule right now</div>
+        ) : (
+          visibleAgents.map((name, i) => (
+            <ScheduleRow
+              key={name}
+              name={name}
+              accent={ACCENTS[i % 2]}
+              appts={isStale ? [] : schedule[name]}
+              onRemove={editMode ? (id) => removeAppt(name, id) : null}
+              synced={SYNCED_AGENTS.has(name)}
+              photoUrl={AGENT_PHOTOS[name]}
+              now={now}
+            />
+          ))
+        )}
       </div>
 
       {away && (
@@ -865,6 +891,20 @@ const styles = {
     flexShrink: 0,
     flexGrow: 0,
   },
+  // Shown instead of any rows when zero agents currently have a live
+  // appointment (e.g. very early/late in the day, or between appointment
+  // waves) -- so the board reads as intentionally quiet rather than
+  // broken or blank.
+  emptyBoard: {
+    height: "100%",
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
+    fontSize: "clamp(20px, 4vw, 44px)",
+    fontWeight: 600,
+    fontStyle: "italic",
+    color: COLORS.muted,
+  },
   row: {
     display: "flex",
     flexDirection: "row",
@@ -880,24 +920,31 @@ const styles = {
     padding: "0 30px",
     borderRight: `6px solid`,
     background: "#fcfcf9",
-    width: 480,
+    width: 500,
     flexShrink: 0,
     flexWrap: "wrap",
   },
-  // Each of these multiplies by --identity-scale (set per-row in
-  // ScheduleRow via BUSY_SCALE / ACTIVE_SCALE) on top of the normal
-  // --row-h-based sizing, so agents with appointments render larger than
-  // "Busy" agents. Upper clamp bounds are raised above the old flat caps
-  // to leave headroom for the ACTIVE_SCALE boost.
+  // Each of these multiplies by --identity-scale (ACTIVE_SCALE, applied to
+  // every rendered row -- see the const above) on top of the normal
+  // --row-h-based sizing. Since rows now grow to fill the board when few
+  // agents qualify (see visibleAgents/visibleRowCount in
+  // AgentScheduleBoard), a single very tall row can push this calc's value
+  // far past any reasonable size -- these upper clamp bounds are the real
+  // ceiling in that case, not just a decorative cap. They're deliberately
+  // conservative: photo + dot + gaps + the longest agent name (~14
+  // characters, e.g. "Austin Streets") at the name cap must still fit
+  // within nameCell's fixed width above, or the name wraps onto its own
+  // line and lands in a visually broken spot (this happened at 90px/43px
+  // caps -- do not raise these without re-checking that math).
   dot: {
-    width: "clamp(5px, calc(var(--row-h, 108px) * 0.148 * var(--identity-scale, 1)), 19px)",
-    height: "clamp(5px, calc(var(--row-h, 108px) * 0.148 * var(--identity-scale, 1)), 19px)",
+    width: "clamp(5px, calc(var(--row-h, 108px) * 0.148 * var(--identity-scale, 1)), 16px)",
+    height: "clamp(5px, calc(var(--row-h, 108px) * 0.148 * var(--identity-scale, 1)), 16px)",
     borderRadius: "50%",
     flexShrink: 0,
   },
   photo: {
-    width: "clamp(20px, calc(var(--row-h, 108px) * 0.7 * var(--identity-scale, 1)), 90px)",
-    height: "clamp(20px, calc(var(--row-h, 108px) * 0.7 * var(--identity-scale, 1)), 90px)",
+    width: "clamp(20px, calc(var(--row-h, 108px) * 0.7 * var(--identity-scale, 1)), 78px)",
+    height: "clamp(20px, calc(var(--row-h, 108px) * 0.7 * var(--identity-scale, 1)), 78px)",
     borderRadius: "50%",
     objectFit: "cover",
     border: "4px solid",
@@ -905,8 +952,8 @@ const styles = {
     flexShrink: 0,
   },
   photoFallback: {
-    width: "clamp(20px, calc(var(--row-h, 108px) * 0.7 * var(--identity-scale, 1)), 90px)",
-    height: "clamp(20px, calc(var(--row-h, 108px) * 0.7 * var(--identity-scale, 1)), 90px)",
+    width: "clamp(20px, calc(var(--row-h, 108px) * 0.7 * var(--identity-scale, 1)), 78px)",
+    height: "clamp(20px, calc(var(--row-h, 108px) * 0.7 * var(--identity-scale, 1)), 78px)",
     borderRadius: "50%",
     border: "4px solid",
     boxSizing: "border-box",
@@ -914,14 +961,14 @@ const styles = {
     display: "flex",
     alignItems: "center",
     justifyContent: "center",
-    fontSize: "clamp(8px, calc(var(--row-h, 108px) * 0.25 * var(--identity-scale, 1)), 32px)",
+    fontSize: "clamp(8px, calc(var(--row-h, 108px) * 0.25 * var(--identity-scale, 1)), 28px)",
     fontWeight: 700,
     color: COLORS.muted,
     background: "#f0efe9",
   },
   name: {
     fontWeight: 700,
-    fontSize: "clamp(9px, calc(var(--row-h, 108px) * 0.333 * var(--identity-scale, 1)), 43px)",
+    fontSize: "clamp(9px, calc(var(--row-h, 108px) * 0.333 * var(--identity-scale, 1)), 34px)",
   },
   scheduleCell: {
     padding: "0 30px",
