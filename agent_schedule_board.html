@@ -128,6 +128,28 @@ const ACCENTS = ["green", "orange"];
 // retune if the sizing ever needs to change again.
 const ACTIVE_SCALE = 1.25;
 
+// Shared copy for the "board is quiet" message -- shown as the sole content
+// when zero agents have anything left today, and ALSO tacked on below the
+// schedule (see FOOTER_MESSAGE_MAX_AGENTS below) when the board only has a
+// couple of rows and would otherwise look sparse. One constant so the two
+// call sites can never drift out of sync with each other.
+const QUIET_BOARD_MESSAGE =
+  "Glad you're here. Let's find the coverage that fits your life, not the other way around.";
+
+// The footer version of QUIET_BOARD_MESSAGE only shows up alongside actual
+// appointment rows when there are this many or fewer visible agents -- once
+// there are more rows than this, the board already looks sufficiently full
+// on its own and the footer would just be crowding real appointment data.
+const FOOTER_MESSAGE_MAX_AGENTS = 2;
+
+// How much vertical space the footer message strip claims, expressed as a
+// multiple of one ordinary agent row's height. Weighted at 1x (rather than
+// a small fixed sliver) so it reads as a deliberate, proportionate part of
+// the board -- not an afterthought -- while still leaving every agent row
+// exactly the height it would have gotten without the footer factored in
+// at all beyond this one shared unit.
+const FOOTER_ROW_WEIGHT = 1.1;
+
 const COLORS = {
   green: "#81C242",
   darkGreen: "#3F6B1C",
@@ -136,6 +158,7 @@ const COLORS = {
   paper: "#E7E5DA",
   line: "#E4E3DD",
   muted: "#8C8C86",
+  quietText: "#55554F",
 };
 
 function to24(time) {
@@ -577,15 +600,32 @@ function AgentScheduleBoard() {
   // rather than leaving empty space when fewer agents qualify.
   const boardRef = useRef(null);
   const visibleRowCount = visibleAgents.length;
+
+  // When the board is thin on appointments (a couple of agents or fewer),
+  // the same "glad you're here" message used for a fully-empty board also
+  // appears as a footer strip below the real rows -- see
+  // FOOTER_MESSAGE_MAX_AGENTS above. It never shows on a fully-empty board
+  // (that's what styles.emptyBoard already is) or once there are enough
+  // agents that the board reads as full on its own.
+  const showFooterMessage =
+    visibleRowCount > 0 && visibleRowCount <= FOOTER_MESSAGE_MAX_AGENTS;
+
   useEffect(() => {
     const el = boardRef.current;
     if (!el) return;
     const GAP = 3;
-    const count = Math.max(visibleRowCount, 1);
+    const rowCount = Math.max(visibleRowCount, 1);
+    // The footer counts as FOOTER_ROW_WEIGHT extra "rows" worth of height
+    // when dividing up the board, and its own gap to the last row counts
+    // toward the total gap budget just like the gap between any two rows.
+    const slots = rowCount + (showFooterMessage ? 1 : 0);
+    const weightedUnits = rowCount + (showFooterMessage ? FOOTER_ROW_WEIGHT : 0);
     const update = () => {
       const height = el.getBoundingClientRect().height;
-      const rowH = (height - GAP * (count - 1)) / count;
-      el.style.setProperty("--row-h", `${Math.max(rowH, 0)}px`);
+      const totalGap = GAP * Math.max(slots - 1, 0);
+      const unit = (height - totalGap) / weightedUnits;
+      el.style.setProperty("--row-h", `${Math.max(unit, 0)}px`);
+      el.style.setProperty("--footer-h", `${Math.max(unit * FOOTER_ROW_WEIGHT, 0)}px`);
     };
     update();
     if (typeof ResizeObserver === "undefined") {
@@ -595,7 +635,7 @@ function AgentScheduleBoard() {
     const ro = new ResizeObserver(update);
     ro.observe(el);
     return () => ro.disconnect();
-  }, [visibleRowCount]);
+  }, [visibleRowCount, showFooterMessage]);
 
   // The board's height used to just be "whatever's left over" in the flex
   // column after the header, date bar, and the "Add appointments" button
@@ -732,20 +772,25 @@ function AgentScheduleBoard() {
         ref={boardRef}
       >
         {visibleAgents.length === 0 ? (
-          <div style={styles.emptyBoard}>Glad you're here. Let's find the coverage that fits your life, not the other way around.</div>
+          <div style={styles.emptyBoard}>{QUIET_BOARD_MESSAGE}</div>
         ) : (
-          visibleAgents.map((name, i) => (
-            <ScheduleRow
-              key={name}
-              name={name}
-              accent={ACCENTS[i % 2]}
-              appts={isStale ? [] : schedule[name]}
-              onRemove={editMode ? (id) => removeAppt(name, id) : null}
-              synced={SYNCED_AGENTS.has(name)}
-              photoUrl={AGENT_PHOTOS[name]}
-              now={now}
-            />
-          ))
+          <>
+            {visibleAgents.map((name, i) => (
+              <ScheduleRow
+                key={name}
+                name={name}
+                accent={ACCENTS[i % 2]}
+                appts={isStale ? [] : schedule[name]}
+                onRemove={editMode ? (id) => removeAppt(name, id) : null}
+                synced={SYNCED_AGENTS.has(name)}
+                photoUrl={AGENT_PHOTOS[name]}
+                now={now}
+              />
+            ))}
+            {showFooterMessage && (
+              <div style={styles.footerMessage}>{QUIET_BOARD_MESSAGE}</div>
+            )}
+          </>
         )}
       </div>
 
@@ -907,7 +952,29 @@ const styles = {
     fontSize: "clamp(28px, 5.5vw, 60px)",
     fontWeight: 600,
     fontStyle: "italic",
-    color: COLORS.muted,
+    color: COLORS.quietText,
+  },
+  // Shown as an extra strip below the real appointment rows once the board
+  // is down to FOOTER_MESSAGE_MAX_AGENTS agents or fewer, so a couple of
+  // rows don't read as an accidentally-sparse board. Sized via flex (using
+  // the same FOOTER_ROW_WEIGHT constant the boardRef effect uses to compute
+  // --footer-h) so it visually claims a consistent, deliberate share of the
+  // board rather than a token sliver -- see the effect's comment for why
+  // that weight is what it is.
+  footerMessage: {
+    flex: FOOTER_ROW_WEIGHT,
+    minHeight: 0,
+    boxSizing: "border-box",
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
+    textAlign: "center",
+    padding: "0 60px",
+    fontSize: "clamp(14px, calc(var(--footer-h, 100px) * 0.22), 32px)",
+    fontWeight: 600,
+    fontStyle: "italic",
+    color: COLORS.quietText,
+    borderTop: `1px solid ${COLORS.line}`,
   },
   row: {
     display: "flex",
