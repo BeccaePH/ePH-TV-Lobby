@@ -732,7 +732,7 @@ function AgentScheduleBoard() {
         ref={boardRef}
       >
         {visibleAgents.length === 0 ? (
-          <div style={styles.emptyBoard}>Nothing on the schedule right now</div>
+          <div style={styles.emptyBoard}>Glad you're here. Let's find the coverage that fits your life, not the other way around.</div>
         ) : (
           visibleAgents.map((name, i) => (
             <ScheduleRow
@@ -897,10 +897,14 @@ const styles = {
   // broken or blank.
   emptyBoard: {
     height: "100%",
+    width: "100%",
+    boxSizing: "border-box",
     display: "flex",
     alignItems: "center",
     justifyContent: "center",
-    fontSize: "clamp(20px, 4vw, 44px)",
+    textAlign: "center",
+    padding: "0 140px",
+    fontSize: "clamp(28px, 5.5vw, 60px)",
     fontWeight: 600,
     fontStyle: "italic",
     color: COLORS.muted,
