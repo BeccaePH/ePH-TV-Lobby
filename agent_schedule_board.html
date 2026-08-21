@@ -95,12 +95,23 @@ const AGENTS = [
 const SYNCED_AGENTS = new Set(["Jeffrey Martin", "Austin Streets", "Tanner Janotta", "Jeanne Barrett", "Jeffrey Warren"]);
 
 const INITIAL_SCHEDULE = {
-  "Jeffrey Martin": [],
-  "Austin Streets": [],
+  "Jeffrey Martin": [
+    { id: "jm-2026-08-21-1", time: "13:00", client: "Brit R." },
+  ],
+  "Austin Streets": [
+    { id: "as-2026-08-21-1", time: "09:00", client: "Paul D." },
+    { id: "as-2026-08-21-2", time: "10:30", client: "James L." },
+    { id: "as-2026-08-21-3", time: "12:00", client: "Shelli T." },
+    { id: "as-2026-08-21-4", time: "13:00", client: "Linda K." },
+    { id: "as-2026-08-21-5", time: "15:00", client: "Debbie K." },
+  ],
   "Tanner Janotta": [],
   "Jeffrey Warren": [],
   "Gina Ensslin": [],
-  "Jeanne Barrett": [],
+  "Jeanne Barrett": [
+    { id: "jb-2026-08-21-1", time: "16:15", client: "Stu & Liz K." },
+    { id: "jb-2026-08-21-2", time: "17:30", client: "Sue & Jeff F." },
+  ],
   "Michael Lewis": [],
   "Kyle Olmstead": [],
 };
@@ -109,7 +120,7 @@ const INITIAL_SCHEDULE = {
 // If the board is still open on a later (or earlier) date and hasn't been
 // refreshed yet, we hide the seeded appointments rather than show stale
 // data from the wrong day.
-const SCHEDULE_DATE = "2026-08-20";
+const SCHEDULE_DATE = "2026-08-21";
 
 const ACCENTS = ["green", "orange"];
 
