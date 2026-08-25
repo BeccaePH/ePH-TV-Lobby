@@ -97,19 +97,19 @@ const SYNCED_AGENTS = new Set(["Jeffrey Martin", "Austin Streets", "Tanner Janot
 const INITIAL_SCHEDULE = {
   "Jeffrey Martin": [],
   "Austin Streets": [
-    { id: "as-2026-08-24-1", time: "09:30", client: "Penny & Rick M." },
-    { id: "as-2026-08-24-2", time: "13:00", client: "James H." },
-    { id: "as-2026-08-24-3", time: "15:30", client: "Melissa L." },
+    { id: "as-2026-08-25-1", time: "11:30", client: "Craig S." },
   ],
   "Tanner Janotta": [
-    { id: "tj-2026-08-24-1", time: "13:00", client: "Bonnie M." },
-    { id: "tj-2026-08-24-2", time: "14:00", client: "Karen L." },
-    { id: "tj-2026-08-24-3", time: "15:00", client: "Mary S." },
-    { id: "tj-2026-08-24-4", time: "16:15", client: "James L." },
+    { id: "tj-2026-08-25-1", time: "09:00", client: "Greg M." },
+    { id: "tj-2026-08-25-2", time: "17:45", client: "Michael E." },
   ],
   "Jeffrey Warren": [],
   "Gina Ensslin": [],
-  "Jeanne Barrett": [],
+  "Jeanne Barrett": [
+    { id: "jb-2026-08-25-1", time: "09:30", client: "Bill & Mary Z." },
+    { id: "jb-2026-08-25-2", time: "10:45", client: "Ruth M." },
+    { id: "jb-2026-08-25-3", time: "15:00", client: "Jim & Roxann G." },
+  ],
   "Michael Lewis": [],
   "Kyle Olmstead": [],
 };
@@ -118,7 +118,7 @@ const INITIAL_SCHEDULE = {
 // If the board is still open on a later (or earlier) date and hasn't been
 // refreshed yet, we hide the seeded appointments rather than show stale
 // data from the wrong day.
-const SCHEDULE_DATE = "2026-08-24";
+const SCHEDULE_DATE = "2026-08-25";
 
 const ACCENTS = ["green", "orange"];
 
