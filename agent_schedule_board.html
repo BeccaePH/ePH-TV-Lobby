@@ -1018,17 +1018,21 @@ const styles = {
   // conservative: photo + dot + gaps + the longest agent name (~14
   // characters, e.g. "Austin Streets") at the name cap must still fit
   // within nameCell's fixed width above, or the name wraps onto its own
-  // line and lands in a visually broken spot (this happened at 90px/43px
-  // caps -- do not raise these without re-checking that math).
+  // line -- and because the row can be too short to show that wrapped
+  // second line at all, a name can end up fully invisible, not just
+  // messy. Measured empirically: 158px is the last safe photo cap before
+  // wrapping starts (at any row height); 140px/28px keeps a real margin
+  // below that line. Do not raise these without re-testing every agent
+  // count 1-8 for wrapping (see the photo_size_measure.js-style harness).
   dot: {
-    width: "clamp(5px, calc(var(--row-h, 108px) * 0.148 * var(--identity-scale, 1)), 16px)",
-    height: "clamp(5px, calc(var(--row-h, 108px) * 0.148 * var(--identity-scale, 1)), 16px)",
+    width: "clamp(5px, calc(var(--row-h, 108px) * 0.148 * var(--identity-scale, 1)), 28px)",
+    height: "clamp(5px, calc(var(--row-h, 108px) * 0.148 * var(--identity-scale, 1)), 28px)",
     borderRadius: "50%",
     flexShrink: 0,
   },
   photo: {
-    width: "clamp(20px, calc(var(--row-h, 108px) * 0.7 * var(--identity-scale, 1)), 78px)",
-    height: "clamp(20px, calc(var(--row-h, 108px) * 0.7 * var(--identity-scale, 1)), 78px)",
+    width: "clamp(20px, calc(var(--row-h, 108px) * 0.7 * var(--identity-scale, 1)), 140px)",
+    height: "clamp(20px, calc(var(--row-h, 108px) * 0.7 * var(--identity-scale, 1)), 140px)",
     borderRadius: "50%",
     objectFit: "cover",
     border: "4px solid",
@@ -1036,8 +1040,8 @@ const styles = {
     flexShrink: 0,
   },
   photoFallback: {
-    width: "clamp(20px, calc(var(--row-h, 108px) * 0.7 * var(--identity-scale, 1)), 78px)",
-    height: "clamp(20px, calc(var(--row-h, 108px) * 0.7 * var(--identity-scale, 1)), 78px)",
+    width: "clamp(20px, calc(var(--row-h, 108px) * 0.7 * var(--identity-scale, 1)), 140px)",
+    height: "clamp(20px, calc(var(--row-h, 108px) * 0.7 * var(--identity-scale, 1)), 140px)",
     borderRadius: "50%",
     border: "4px solid",
     boxSizing: "border-box",
