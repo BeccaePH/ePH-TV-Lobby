@@ -33,6 +33,25 @@ const AGENT_PHOTOS = {
 
 const LOGO_URL = "logo.png";
 
+// object-fit: cover on the circular photo defaults to centering its crop
+// vertically, but these source photos (300px wide x ~410-420px tall
+// headshots) have the subject's head close to the top of the frame with
+// more empty shirt/shoulder room below -- a centered crop was cutting off
+// the top of the hair for most agents. This shifts the crop window up
+// per-agent (as the Y value in CSS object-position: "50% Y%" -- 0% shows
+// the very top of the source image, 50% is the old centered default) just
+// enough to keep the whole head clear, measured directly against each
+// photo. Agents not listed here (a new hire, or a photo swapped in later)
+// fall back to the normal centered crop.
+const AGENT_PHOTO_POSITION = {
+  "Austin Streets": "50% 8%",
+  "Tanner Janotta": "50% 13%",
+  "Gina Ensslin": "50% 3%",
+  "Jeffrey Warren": "50% 9%",
+  "Kyle Olmstead": "50% 5%",
+  "Michael Lewis": "50% 15%",
+};
+
 const AGENTS = [
   "Austin Streets",
   "Gina Ensslin",
@@ -325,7 +344,11 @@ function ScheduleRow({ name, accent, appts, onRemove, synced, photoUrl, now }) {
           <img
             src={photoUrl}
             alt={name}
-            style={{ ...styles.photo, borderColor: COLORS[accent] }}
+            style={{
+              ...styles.photo,
+              borderColor: COLORS[accent],
+              objectPosition: AGENT_PHOTO_POSITION[name] || "50% 50%",
+            }}
             onError={() => setImgFailed(true)}
           />
         ) : (
