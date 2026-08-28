@@ -114,24 +114,19 @@ const AGENTS = [
 const SYNCED_AGENTS = new Set(["Jeffrey Martin", "Austin Streets", "Tanner Janotta", "Jeanne Barrett", "Jeffrey Warren"]);
 
 const INITIAL_SCHEDULE = {
-  "Jeffrey Martin": [
-    { id: "jm-2026-08-27-1", time: "14:30", client: "Diane & Tim B." },
-  ],
+  "Jeffrey Martin": [],
   "Austin Streets": [
-    { id: "as-2026-08-27-1", time: "09:30", client: "Gloria & Anthony S." },
-    { id: "as-2026-08-27-2", time: "13:30", client: "Patrick C." },
-    { id: "as-2026-08-27-3", time: "15:00", client: "Debbie K." },
+    { id: "as-2026-08-28-1", time: "09:30", client: "Sally & Chris L." },
+    { id: "as-2026-08-28-2", time: "13:30", client: "Sheryl & Jon M." },
+    { id: "as-2026-08-28-3", time: "15:00", client: "Annalisa H." },
   ],
   "Tanner Janotta": [
-    { id: "tj-2026-08-27-1", time: "10:00", client: "Steven P." },
-    { id: "tj-2026-08-27-2", time: "15:00", client: "Mark & Elaine F." },
-    { id: "tj-2026-08-27-3", time: "16:30", client: "Peggy B." },
+    { id: "tj-2026-08-28-1", time: "10:00", client: "Rachel K." },
+    { id: "tj-2026-08-28-2", time: "11:30", client: "Renee K." },
   ],
   "Jeffrey Warren": [],
   "Gina Ensslin": [],
-  "Jeanne Barrett": [
-    { id: "jb-2026-08-27-1", time: "13:30", client: "Steve & Aimee K." },
-  ],
+  "Jeanne Barrett": [],
   "Michael Lewis": [],
   "Kyle Olmstead": [],
 };
@@ -140,7 +135,7 @@ const INITIAL_SCHEDULE = {
 // If the board is still open on a later (or earlier) date and hasn't been
 // refreshed yet, we hide the seeded appointments rather than show stale
 // data from the wrong day.
-const SCHEDULE_DATE = "2026-08-27";
+const SCHEDULE_DATE = "2026-08-28";
 
 const ACCENTS = ["green", "orange"];
 
