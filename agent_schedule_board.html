@@ -16,7 +16,17 @@
 <body>
 <div id="root"></div>
 <script type="text/babel">
-FILE_URL_PLACEHOLDER
-</script>
-</body>
-</html>
+const { useState, useMemo, useEffect, useRef } = React;
+
+
+// Photos pulled from ePlatinumHealth's own staff/agent bio pages (eplatinumhealth.com).
+const AGENT_PHOTOS = {
+  "Jeffrey Martin": "data:image/jpeg;base64,PLACEHOLDER_KEEP_EXISTING_IMAGE",
+  "Austin Streets": "austin-streets.jpg",
+  "Tanner Janotta": "tanner-janotta.jpg",
+  "Michael Lewis": "michael-lewis.jpg",
+  "Kyle Olmstead": "kyle-olmstead.jpg",
+  "Jeffrey Warren": "jeffrey-warren.jpg",
+  "Gina Ensslin": "gina-ensslin.jpg",
+  "Jeanne Barrett": "jeanne-barrett.jpg",
+};
