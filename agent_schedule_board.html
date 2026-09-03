@@ -284,31 +284,59 @@ function ScheduleRow({ name, accent, appts, onRemove, synced, photoUrl, now }) {
   );
 }
 
-const SCHEDULE_STORAGE_KEY = "eph_schedule";
-const SCHEDULE_STORAGE_DATE_KEY = "eph_schedule_date";
+const DAY_STATE_KEY = "eph_day_state";
+const DAY_STATE_DATE_KEY = "eph_day_state_date";
 
-function loadStoredSchedule() {
+function loadDayState() {
   try {
     if (
-      localStorage.getItem(SCHEDULE_STORAGE_DATE_KEY) === SCHEDULE_DATE &&
-      localStorage.getItem(SCHEDULE_STORAGE_KEY)
+      localStorage.getItem(DAY_STATE_DATE_KEY) === SCHEDULE_DATE &&
+      localStorage.getItem(DAY_STATE_KEY)
     ) {
-      return JSON.parse(localStorage.getItem(SCHEDULE_STORAGE_KEY));
+      const parsed = JSON.parse(localStorage.getItem(DAY_STATE_KEY));
+      return { manual: parsed.manual || {}, removedSynced: parsed.removedSynced || [] };
     }
   } catch (e) {
   }
-  return null;
+  return { manual: {}, removedSynced: [] };
+}
+
+function syncedKey(agent, appt) {
+  return `${agent}|${appt.time}|${appt.client}`;
+}
+
+function buildSchedule(manual, removedSyncedSet) {
+  const combined = {};
+  AGENTS.forEach((name) => {
+    const synced = (INITIAL_SCHEDULE[name] || []).filter(
+      (a) => !removedSyncedSet.has(syncedKey(name, a))
+    );
+    combined[name] = [...synced, ...(manual[name] || [])];
+  });
+  return combined;
 }
 
 function AgentScheduleBoard() {
-  const [schedule, setSchedule] = useState(() => loadStoredSchedule() || INITIAL_SCHEDULE);
+  // Synced agents' rows always reflect the latest INITIAL_SCHEDULE served by the page
+  // (re-read on every reload, including the 5-minute auto-refresh), so a same-day
+  // recalendar sync shows up without anyone touching the kiosk. Only manual additions
+  // and manual removals of a synced entry persist locally per day.
+  const [dayState, setDayState] = useState(() => loadDayState());
   useEffect(() => {
     try {
-      localStorage.setItem(SCHEDULE_STORAGE_KEY, JSON.stringify(schedule));
-      localStorage.setItem(SCHEDULE_STORAGE_DATE_KEY, SCHEDULE_DATE);
+      localStorage.setItem(DAY_STATE_KEY, JSON.stringify(dayState));
+      localStorage.setItem(DAY_STATE_DATE_KEY, SCHEDULE_DATE);
     } catch (e) {
     }
-  }, [schedule]);
+  }, [dayState]);
+  const removedSyncedSet = useMemo(
+    () => new Set(dayState.removedSynced),
+    [dayState.removedSynced]
+  );
+  const schedule = useMemo(
+    () => buildSchedule(dayState.manual, removedSyncedSet),
+    [dayState.manual, removedSyncedSet]
+  );
   const [form, setForm] = useState({ agent: AGENTS[0], time: "", client: "" });
   const [editMode, setEditMode] = useState(false);
 
@@ -479,17 +507,30 @@ function AgentScheduleBoard() {
       time: form.time,
       client: form.client.trim(),
     };
-    setSchedule((prev) => ({
+    setDayState((prev) => ({
       ...prev,
-      [form.agent]: [...prev[form.agent], entry],
+      manual: {
+        ...prev.manual,
+        [form.agent]: [...(prev.manual[form.agent] || []), entry],
+      },
     }));
     setForm((f) => ({ ...f, time: "", client: "" }));
   };
 
   const removeAppt = (agent, id) => {
-    setSchedule((prev) => ({
+    const isManual = (dayState.manual[agent] || []).some((a) => a.id === id);
+    if (isManual) {
+      setDayState((prev) => ({
+        ...prev,
+        manual: { ...prev.manual, [agent]: prev.manual[agent].filter((a) => a.id !== id) },
+      }));
+      return;
+    }
+    const apptToRemove = (schedule[agent] || []).find((a) => a.id === id);
+    if (!apptToRemove) return;
+    setDayState((prev) => ({
       ...prev,
-      [agent]: prev[agent].filter((a) => a.id !== id),
+      removedSynced: [...prev.removedSynced, syncedKey(agent, apptToRemove)],
     }));
   };
 
