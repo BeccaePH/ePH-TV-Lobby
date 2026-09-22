@@ -100,11 +100,6 @@ const COLORS = {
   quietText: "#55554F",
 };
 
-function to24(time) {
-  if (!time) return "99:99";
-  return time;
-}
-
 function toMinutes(time) {
   if (!time) return 24 * 60;
   const [h, m] = time.split(":").map(Number);
@@ -118,9 +113,10 @@ function localDateKey(d) {
   return `${y}-${m}-${day}`;
 }
 
-function toDisplay(time) {
-  if (!time) return "--:--";
-  const [h, m] = time.split(":").map(Number);
+function toDisplay(a) {
+  if (a.allDay) return "All Day";
+  if (!a.time) return "--:--";
+  const [h, m] = a.time.split(":").map(Number);
   const period = h >= 12 ? "PM" : "AM";
   const h12 = h % 12 === 0 ? 12 : h % 12;
   return `${h12}:${String(m).padStart(2, "0")} ${period}`;
@@ -130,8 +126,8 @@ const DROP_OFF_GRACE_MINUTES = 20;
 function getVisibleAppts(appts, now) {
   const nowMinutes = now.getHours() * 60 + now.getMinutes();
   return [...appts]
-    .filter((a) => toMinutes(a.time) + DROP_OFF_GRACE_MINUTES > nowMinutes)
-    .sort((a, b) => to24(a.time).localeCompare(to24(b.time)));
+    .filter((a) => a.allDay || toMinutes(a.time) + DROP_OFF_GRACE_MINUTES > nowMinutes)
+    .sort((a, b) => (a.allDay ? -1 : toMinutes(a.time)) - (b.allDay ? -1 : toMinutes(b.time)));
 }
 
 function ScheduleRow({ name, accent, appts, onRemove, synced, photoUrl, now }) {
@@ -188,7 +184,7 @@ function ScheduleRow({ name, accent, appts, onRemove, synced, photoUrl, now }) {
   const renderAppt = (a, key, hidden) => (
     <div style={styles.apptH} key={key} aria-hidden={hidden || undefined}>
       <span style={{ ...styles.time, color: COLORS[accent] }}>
-        {toDisplay(a.time)}
+        {toDisplay(a)}
       </span>
       <span style={styles.client}>{a.client}</span>
       {onRemove && !hidden && (
@@ -260,7 +256,7 @@ function ScheduleRow({ name, accent, appts, onRemove, synced, photoUrl, now }) {
             {sorted.map((a, i) => (
               <div style={styles.apptH} key={a.id ?? i}>
                 <span style={{ ...styles.time, color: COLORS[accent] }}>
-                  {toDisplay(a.time)}
+                  {toDisplay(a)}
                 </span>
                 <span style={styles.client}>{a.client}</span>
                 {onRemove && (
@@ -334,7 +330,7 @@ function AgentScheduleBoard() {
     () => buildSchedule(dayState.manual, removedSyncedSet),
     [dayState.manual, removedSyncedSet]
   );
-  const [form, setForm] = useState({ agent: AGENTS[0], time: "", client: "" });
+  const [form, setForm] = useState({ agent: AGENTS[0], time: "", client: "", allDay: false });
   const [editMode, setEditMode] = useState(false);
 
   const [now, setNow] = useState(() => new Date());
@@ -498,10 +494,12 @@ function AgentScheduleBoard() {
 
   const addAppt = (e) => {
     e.preventDefault();
-    if (!form.time || !form.client.trim()) return;
+    if (!form.client.trim()) return;
+    if (!form.allDay && !form.time) return;
     const entry = {
       id: `${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
-      time: form.time,
+      time: form.allDay ? "" : form.time,
+      allDay: form.allDay,
       client: form.client.trim(),
     };
     setDayState((prev) => ({
@@ -511,7 +509,7 @@ function AgentScheduleBoard() {
         [form.agent]: [...(prev.manual[form.agent] || []), entry],
       },
     }));
-    setForm((f) => ({ ...f, time: "", client: "" }));
+    setForm((f) => ({ ...f, time: "", client: "", allDay: false }));
   };
 
   const removeAppt = (agent, id) => {
@@ -625,16 +623,28 @@ function AgentScheduleBoard() {
               </option>
             ))}
           </select>
-          <input
-            type="time"
-            required
-            value={form.time}
-            onChange={(e) => setForm((f) => ({ ...f, time: e.target.value }))}
-            style={styles.input}
-          />
+          <label style={styles.checkboxLabel}>
+            <input
+              type="checkbox"
+              checked={form.allDay}
+              onChange={(e) =>
+                setForm((f) => ({ ...f, allDay: e.target.checked, time: e.target.checked ? "" : f.time }))
+              }
+            />
+            All day (no set time)
+          </label>
+          {!form.allDay && (
+            <input
+              type="time"
+              required
+              value={form.time}
+              onChange={(e) => setForm((f) => ({ ...f, time: e.target.value }))}
+              style={styles.input}
+            />
+          )}
           <input
             type="text"
-            placeholder="Client name (e.g. Linda K.)"
+            placeholder={form.allDay ? "Meeting/event title (e.g. Out of Office)" : "Client name (e.g. Linda K.)"}
             required
             value={form.client}
             onChange={(e) => setForm((f) => ({ ...f, client: e.target.value }))}
@@ -931,6 +941,16 @@ const styles = {
     borderRadius: 8,
     padding: "10px 14px",
     fontSize: 18,
+  },
+  checkboxLabel: {
+    display: "flex",
+    alignItems: "center",
+    gap: 8,
+    fontSize: 16,
+    fontWeight: 600,
+    color: COLORS.ink,
+    cursor: "pointer",
+    userSelect: "none",
   },
   addBtn: {
     border: "none",
