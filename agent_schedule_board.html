@@ -66,21 +66,25 @@ const AGENTS = [
 const SYNCED_AGENTS = new Set(["Jeffrey Martin", "Austin Streets", "Tanner Janotta", "Jeanne Barrett", "Jeffrey Warren"]);
 
 const INITIAL_SCHEDULE = {
-  "Jeffrey Martin": [
-    { id: "JM-2026-10-16-1", time: "14:30", client: "Michael E." },
+  "Jeffrey Martin": [],
+  "Austin Streets": [
+    { id: "AS-2026-10-19-1", time: "10:00", client: "Kelly & Mark H." },
+    { id: "AS-2026-10-19-2", time: "12:00", client: "Brian & Mary C." },
+    { id: "AS-2026-10-19-3", time: "12:45", client: "Jacqueline & Daniel Z." },
   ],
-  "Austin Streets": [],
   "Tanner Janotta": [],
   "Jeffrey Warren": [],
   "Gina Ensslin": [],
   "Jeanne Barrett": [
-    { id: "JB-2026-10-16-1", time: "14:30", client: "Caroline R." },
+    { id: "JB-2026-10-19-1", time: "11:00", client: "Rick J." },
+    { id: "JB-2026-10-19-2", time: "13:00", client: "Cassandra G." },
+    { id: "JB-2026-10-19-3", time: "15:30", client: "Martha C." },
   ],
   "Michael Lewis": [],
   "Kyle Olmstead": [],
 };
 
-const SCHEDULE_DATE = "2026-10-16";
+const SCHEDULE_DATE = "2026-10-19";
 
 const ACCENTS = ["green", "orange"];
 const ACTIVE_SCALE = 1.25;
