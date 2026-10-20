@@ -66,25 +66,38 @@ const AGENTS = [
 const SYNCED_AGENTS = new Set(["Jeffrey Martin", "Austin Streets", "Tanner Janotta", "Jeanne Barrett", "Jeffrey Warren"]);
 
 const INITIAL_SCHEDULE = {
-  "Jeffrey Martin": [],
-  "Austin Streets": [
-    { id: "AS-2026-10-19-1", time: "10:00", client: "Kelly & Mark H." },
-    { id: "AS-2026-10-19-2", time: "12:00", client: "Brian & Mary C." },
-    { id: "AS-2026-10-19-3", time: "12:45", client: "Jacqueline & Daniel Z." },
+  "Jeffrey Martin": [
+    { id: "JM-2026-10-20-1", time: "11:00", client: "Bob & Hillary C." },
+    { id: "JM-2026-10-20-2", time: "12:15", client: "Sarah W. & Mark W." },
+    { id: "JM-2026-10-20-3", time: "13:00", client: "Brenda J." },
+    { id: "JM-2026-10-20-4", time: "14:00", client: "Susan & Patrick L." },
+    { id: "JM-2026-10-20-5", time: "15:00", client: "Linda & Daryl B." },
+    { id: "JM-2026-10-20-6", time: "16:15", client: "Mary S." },
+    { id: "JM-2026-10-20-7", time: "17:15", client: "Kimberly & Clark P." },
+    { id: "JM-2026-10-20-8", time: "18:15", client: "Randolph J." },
+    { id: "JM-2026-10-20-9", time: "19:00", client: "Mary & Robert T." },
   ],
-  "Tanner Janotta": [],
+  "Austin Streets": [],
+  "Tanner Janotta": [
+    { id: "TJ-2026-10-20-1", time: "09:00", client: "Lavonna & Nick J." },
+    { id: "TJ-2026-10-20-2", time: "10:00", client: "John & Margaret T." },
+    { id: "TJ-2026-10-20-3", time: "11:00", client: "Janice K." },
+    { id: "TJ-2026-10-20-4", time: "12:00", client: "David C." },
+    { id: "TJ-2026-10-20-5", time: "13:00", client: "Mary M." },
+    { id: "TJ-2026-10-20-6", time: "14:00", client: "Lynda K." },
+    { id: "TJ-2026-10-20-7", time: "17:00", client: "Janet M." },
+  ],
   "Jeffrey Warren": [],
   "Gina Ensslin": [],
   "Jeanne Barrett": [
-    { id: "JB-2026-10-19-1", time: "11:00", client: "Rick J." },
-    { id: "JB-2026-10-19-2", time: "13:00", client: "Cassandra G." },
-    { id: "JB-2026-10-19-3", time: "15:30", client: "Martha C." },
+    { id: "JB-2026-10-20-1", time: "09:00", client: "Michael & Sandra V." },
+    { id: "JB-2026-10-20-2", time: "11:00", client: "Mary B." },
   ],
   "Michael Lewis": [],
   "Kyle Olmstead": [],
 };
 
-const SCHEDULE_DATE = "2026-10-19";
+const SCHEDULE_DATE = "2026-10-20";
 
 const ACCENTS = ["green", "orange"];
 const ACTIVE_SCALE = 1.25;
