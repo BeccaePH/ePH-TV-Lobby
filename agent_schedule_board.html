@@ -66,54 +66,38 @@ const AGENTS = [
 const SYNCED_AGENTS = new Set(["Jeffrey Martin", "Austin Streets", "Tanner Janotta", "Jeanne Barrett", "Jeffrey Warren"]);
 
 const INITIAL_SCHEDULE = {
-  "Jeffrey Martin": [
-    { id: "JM-2026-11-12-1", time: "08:15", client: "Jane & Mahlon B." },
-    { id: "JM-2026-11-12-2", time: "11:00", client: "Padmini & Santhosh K." },
-    { id: "JM-2026-11-12-3", time: "11:45", client: "David S." },
-    { id: "JM-2026-11-12-4", time: "12:15", client: "Matthew & Joyce D." },
-    { id: "JM-2026-11-12-5", time: "13:15", client: "Leann K." },
-    { id: "JM-2026-11-12-6", time: "13:45", client: "Michelle H." },
-  ],
+  "Jeffrey Martin": [],
   "Austin Streets": [
-    { id: "AS-2026-11-12-1", time: "08:30", client: "Jim & Kelly K." },
-    { id: "AS-2026-11-12-2", time: "09:30", client: "Randy & Diane M." },
-    { id: "AS-2026-11-12-3", time: "10:30", client: "Steve & Michele G." },
-    { id: "AS-2026-11-12-4", time: "11:30", client: "Maxine & Donald E." },
-    { id: "AS-2026-11-12-5", time: "12:15", client: "Diana S." },
-    { id: "AS-2026-11-12-6", time: "13:00", client: "Kathleen & Richard S." },
-    { id: "AS-2026-11-12-7", time: "16:15", client: "Kathleen & Norman T." },
-    { id: "AS-2026-11-12-8", time: "17:00", client: "Beth & Michael W." },
-    { id: "AS-2026-11-12-9", time: "18:00", client: "Pamela & Kenny J." },
-    { id: "AS-2026-11-12-10", time: "18:45", client: "Dennis S." },
-    { id: "AS-2026-11-12-11", time: "19:15", client: "Cynthia K." },
-    { id: "AS-2026-11-12-12", time: "20:00", client: "Alan W." },
+    { id: "AS-2026-11-13-1", time: "17:00", client: "Harrice H." },
+    { id: "AS-2026-11-13-2", time: "18:00", client: "Susan & Timothy S." },
+    { id: "AS-2026-11-13-3", time: "19:00", client: "Mike W." },
   ],
   "Tanner Janotta": [
-    { id: "TJ-2026-11-12-1", time: "08:15", client: "Gregory S." },
-    { id: "TJ-2026-11-12-2", time: "09:00", client: "Vicky & Richard B." },
-    { id: "TJ-2026-11-12-3", time: "10:00", client: "Linn E. & Matt H." },
-    { id: "TJ-2026-11-12-4", time: "15:00", client: "Bill K." },
-    { id: "TJ-2026-11-12-5", time: "16:00", client: "Gregory M." },
-    { id: "TJ-2026-11-12-6", time: "17:00", client: "MaryAnn & John E." },
-    { id: "TJ-2026-11-12-7", time: "17:45", client: "Kathleen & Gary L." },
-    { id: "TJ-2026-11-12-8", time: "19:00", client: "Rose & Robert K." },
+    { id: "TJ-2026-11-13-1", time: "08:00", client: "Nathan D." },
+    { id: "TJ-2026-11-13-2", time: "09:00", client: "Jana J. & Michael D." },
+    { id: "TJ-2026-11-13-3", time: "10:00", client: "Timothy & Linda H." },
+    { id: "TJ-2026-11-13-4", time: "12:00", client: "Gayle Y." },
+    { id: "TJ-2026-11-13-5", time: "13:00", client: "Jennie T. & John H." },
+    { id: "TJ-2026-11-13-6", time: "14:00", client: "Paul O." },
+    { id: "TJ-2026-11-13-7", time: "15:30", client: "Dominique M." },
+    { id: "TJ-2026-11-13-8", time: "16:00", client: "Gerald & Patricia M." },
+    { id: "TJ-2026-11-13-9", time: "17:00", client: "Lois & Ed S." },
+    { id: "TJ-2026-11-13-10", time: "18:00", client: "Nancy V." },
+    { id: "TJ-2026-11-13-11", time: "19:00", client: "Ann M." },
   ],
   "Jeffrey Warren": [],
   "Gina Ensslin": [],
   "Jeanne Barrett": [
-    { id: "JB-2026-11-12-1", time: "09:00", client: "Alan & Susan P." },
-    { id: "JB-2026-11-12-2", time: "10:00", client: "Dale & Chris S." },
-    { id: "JB-2026-11-12-3", time: "11:00", client: "Lauri R." },
-    { id: "JB-2026-11-12-4", time: "13:00", client: "Craig & Jackie K." },
-    { id: "JB-2026-11-12-5", time: "14:00", client: "Ken & Sandra M." },
-    { id: "JB-2026-11-12-6", time: "14:30", client: "Kara K. & Brian K." },
-    { id: "JB-2026-11-12-7", time: "15:30", client: "Tracy I." },
+    { id: "JB-2026-11-13-1", time: "13:00", client: "Tammy & Dave S." },
+    { id: "JB-2026-11-13-2", time: "14:00", client: "Paul & Sue C." },
+    { id: "JB-2026-11-13-3", time: "15:30", client: "Kathy N. & Pam S." },
+    { id: "JB-2026-11-13-4", time: "16:45", client: "John & Kelly W." },
   ],
   "Michael Lewis": [],
   "Kyle Olmstead": [],
 };
 
-const SCHEDULE_DATE = "2026-11-12";
+const SCHEDULE_DATE = "2026-11-13";
 
 const ACCENTS = ["green", "orange"];
 const ACTIVE_SCALE = 1.25;
